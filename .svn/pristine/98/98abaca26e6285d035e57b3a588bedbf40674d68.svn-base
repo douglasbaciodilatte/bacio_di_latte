@@ -1,0 +1,61 @@
+#INCLUDE "totvs.ch"
+
+/*/{Protheus.doc} BDGESTMP()
+    (long_description)
+    @type  Function
+    @author user
+    @since date
+    @version version
+    @param param, param_type, param_descr
+    @return return, return_type, return_description
+    @example
+    (examples)
+    @see (links_or_references)
+    /*/
+
+User Function BDGESTMP()
+    
+    Local aRet := {}
+    Local aParamBox := {}
+
+    aAdd(aParamBox,{3,"Itens para inventario",1,{"Relatorio","Executar"},50,"",.F.}) //1
+	aAdd(aParamBox,{1,"Filial "	,Space(4),"","","SM0","",50,.F.})  //2
+	aAdd(aParamBox,{1,"Armazem ",Space(6),"","","NNR","",50,.F.})  //3
+	
+   	If ParamBox(aParamBox,"Rotina itens para Inventario...",@aRet)
+
+        If MV_PAR01 == 1
+            RETEXEC1()
+		ElseIf MV_PAR01 == 2
+			ROTEXEC2()	
+        EndIf
+
+   	Endif
+
+Return 
+
+Static Function RETEXEC1()
+
+	Local cQuery := ""
+	Local c2Query
+
+	cQuery := U_BDINVA01(MV_PAR02, MV_PAR03, .F.)
+
+	c2Query := " SELECT B7_COD, B1_DESC FROM "+RETSQLNAME("SB7")+" SB7 " 
+	c2Query += " JOIN "+RETSQLNAME("SB1")+" SB1 ON SB1.B1_FILIAL = '' AND SB1.B1_COD = SB7.B7_COD AND SB1.D_E_L_E_T_ != '*' "
+	c2Query += " WHERE B7_LOCAL = '"+MV_PAR03+"' AND SUBSTRING(B7_DATA ,1,6) = '"+SUBSTR( DTOS( DATE() - 30 ),1,6)+"' AND B7_QUANT != 0  AND SB7.D_E_L_E_T_ != '*' " 
+
+    //Chamada função para gerar em Excel
+	U_QRYCSV(cQuery,"ITENS SD1")
+	U_QRYCSV(c2Query,"ITENS INVENTARIO")
+
+Return
+
+Static Function ROTEXEC2()
+
+	Local cQuery := ""
+
+	//Chamada Função
+	cQuery := U_BDINVA01(MV_PAR02, MV_PAR03, .T.)
+	
+Return

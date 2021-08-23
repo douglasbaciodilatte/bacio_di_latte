@@ -1,0 +1,186 @@
+#Include "tbiconn.ch"
+#Include "protheus.ch"
+#Include "TopConn.ch"
+
+#Define STR_PULA    Chr(13)+Chr(10)
+
+/*/{Protheus.doc} User Function BLESTR19
+    (long_description)
+    @type  Function
+    @author Douglas Rodrigues da Silva
+    @since 10/02/2021
+    @version 1.0
+    @param param_name, param_type, param_descr
+    @return return_var, return_type, return_description
+    @example
+        Relatório sugestão de pedidos lojas
+    @see (links_or_references)
+    /*/
+
+User Function BLESTR19()
+    
+Private aPergs  := {}
+Private cLocal  := Space(TamSx3("NNR_CODIGO")[1])
+Private dDaTa   := SToD('')
+Private dDaIv   := SToD('')
+Private nDiasC  := 99
+Private nDiasP  := 99
+Private cMarg   := SPACE(2)
+Private cForn   := SPACE(6)
+
+aAdd(aPergs, {1, "Loja"             ,cLocal,    "",  ".T.",   "NNR",  ".T.", 40,.F.})
+aAdd(aPergs, {1, "Estoque Final"    ,dDaTa,     "",  ".T.",   "",  ".T.", 80,  .F.})
+aAdd(aPergs, {1, "Estoque Inicial"  ,dDaIv,     "",  ".T.",   "",  ".T.", 80,  .F.})
+aAdd(aPergs, {1, "Dias Consumo"     ,nDiasC,    "",  ".T.",   "",  ".T.", 80,  .F.})
+aAdd(aPergs, {1, "Dias Pedido"      ,nDiasP,    "",  ".T.",   "",  ".T.", 80,  .F.})
+aAdd(aPergs, {1, "Magem Seg"        ,cMarg,     "",  ".T.",   "",  ".T.", 80,  .F.})
+aAdd(aPergs, {1, "Fornecedor"       ,cForn,     "",  ".T.",   "SA2",".T.", 80,  .F.})
+
+    If ParamBox(aPergs, "Informe os parametros")
+        MsAguarde({|| GeraExcel()},,"O arquivo Excel esta sendo gerado...")
+    EndIf
+
+Return
+
+Static Function GeraExcel()
+
+    Local aArea     := GetArea()
+    Local cQuery    := ""
+    Local cArquivo  := GetTempPath()+'BLESTR19_'+ DTOS(DATE()) + '_' + SUBSTR(TIME(),1,2) + '_' + SUBSTR(TIME(),4,2) +'.xml'
+    Local nConsumo  := 0
+    Local nMargem   := 0
+
+    cQuery := " SELECT TEMP.FILIAL, TEMP.CODIGO, TEMP.DESCRICAO, TEMP.CODFOR, TEMP.NOME, TEMP.TIPO, TEMP.UN1, TEMP.UN2," + CRLF
+	cQuery += " TEMP.INI_QTDE_1, SUM(TEMP.ENT_QTDE_1) AS 'ENT_QTDE_1', TEMP.FIM_QTDE_1, " + CRLF
+	cQuery += " IIF(TEMP.INI_QTDE_1 > (TEMP.INI_QTDE_1 + ISNULL(SUM(TEMP.ENT_QTDE_1),0)), TEMP.FIM_QTDE_1, (TEMP.INI_QTDE_1 + ISNULL(SUM(TEMP.ENT_QTDE_1),0) - TEMP.FIM_QTDE_1)) AS 'CON_QTDE_1', " + CRLF
+	cQuery += " TEMP.INI_QTDE_2, SUM(TEMP.ENT_QTDE_2) AS 'ENT_QTDE_2', TEMP.FIM_QTDE_2, " + CRLF
+	//cQuery += " IIF( TEMP.INI_QTDE_2 > (TEMP.INI_QTDE_2 + ISNULL(SUM(TEMP.ENT_QTDE_2),0) ), TEMP.FIM_QTDE_2, (TEMP.INI_QTDE_2 + ISNULL(SUM(TEMP.ENT_QTDE_2),0) - TEMP.INI_QTDE_2)) AS 'CON_QTDE_2'	 " + CRLF
+    cQuery += " ROUND( (TEMP.INI_QTDE_2 + ISNULL(SUM(TEMP.ENT_QTDE_2),0) )*+1,2) - TEMP.FIM_QTDE_2 AS 'CON_QTDE_2'" + CRLF	 
+    cQuery += " FROM ( " + CRLF
+    cQuery += " SELECT	SB7.B7_FILIAL AS 'FILIAL',  " + CRLF
+    cQuery += "  SB7.B7_COD AS 'CODIGO', " + CRLF 
+    cQuery += "  SB1.B1_DESC AS 'DESCRICAO', " + CRLF 
+    cQuery += "  ISNULL(SA2.A2_COD + '-' + SA2.A2_LOJA,'') AS 'CODFOR'," + CRLF 
+    cQuery += "  ISNULL(SA2.A2_NREDUZ,'') AS 'NOME'," + CRLF 
+    cQuery += "  SB7.B7_TIPO AS 'TIPO', " + CRLF 
+    cQuery += "  SB7.B7_DATA AS 'DATAA', " + CRLF 
+    cQuery += "  SB1.B1_UM AS 'UN1', " + CRLF 
+    cQuery += "  SB1.B1_SEGUM AS 'UN2', " + CRLF
+
+ 	//cQuery += "  ISNULL(SB7.B7_QUANT,0) AS 'INI_QTDE_1', " + CRLF
+
+    cQuery += " CASE "
+    cQuery += "    WHEN ISNULL(SB7.B7_QUANT,0) > 0 THEN SB7.B7_QUANT " + CRLF
+    cQuery += "    ELSE ISNULL(SB2.B2_QATU,0) " + CRLF
+    cQuery += " END AS 'INI_QTDE_1', " + CRLF
+
+	cQuery += "  ISNULL(SD1.D1_QUANT,0) AS 'ENT_QTDE_1', " + CRLF
+	cQuery += "  FIM.B7_QUANT AS 'FIM_QTDE_1', " + CRLF
+
+	//cQuery += "  ISNULL(SB7.B7_QTSEGUM,0) AS 'INI_QTDE_2', " + CRLF
+
+    cQuery += "  CASE " + CRLF
+    cQuery += "      WHEN ISNULL(SB7.B7_QTSEGUM,0) > 0 THEN SB7.B7_QTSEGUM " + CRLF
+    cQuery += "      ELSE ISNULL(SB2.B2_QTSEGUM,0) " + CRLF
+    cQuery += "  END AS 'INI_QTDE_2', " + CRLF
+
+	cQuery += "  ISNULL(SD1.D1_QTSEGUM,0) AS 'ENT_QTDE_2', " + CRLF 
+ 	cQuery += "  FIM.B7_QTSEGUM AS 'FIM_QTDE_2'	 " + CRLF 
+    cQuery += " FROM "+RETSQLNAME("SB7")+" SB7  WITH (NOLOCK) " + CRLF
+    cQuery += " JOIN "+RETSQLNAME("SB1")+" SB1 WITH (NOLOCK) ON SB1.B1_FILIAL = '' AND SB1.B1_COD = SB7.B7_COD AND SB1.D_E_L_E_T_ != '*'   " + CRLF
+    cQuery += " LEFT JOIN "+RETSQLNAME("SD1")+" SD1 WITH (NOLOCK) ON SD1.D1_CC = SB7.B7_LOCAL AND SD1.D1_COD = SB7.B7_COD AND SUBSTRING(SD1.D1_EMISSAO,1,6) = '"+ SUBSTR(DTOS(MV_PAR02),1,6) +"'AND SD1.D_E_L_E_T_ != '*' " + CRLF
+    cQuery += " JOIN "+RETSQLNAME("SB7")+" FIM WITH (NOLOCK) ON FIM.B7_LOCAL = SB7.B7_LOCAL AND FIM.B7_COD = SB7.B7_COD AND SUBSTRING(FIM.B7_DATA,1,6) = '"+ SUBSTR(DTOS(MV_PAR02),1,6) +"' AND FIM.D_E_L_E_T_ != '*' " + CRLF 
+    cQuery += " LEFT JOIN "+RETSQLNAME("SA2")+" SA2 WITH (NOLOCK) ON SA2.A2_FILIAL = '' AND SA2.A2_COD = SD1.D1_FORNECE AND SA2.A2_LOJA = SD1.D1_LOJA AND SA2.D_E_L_E_T_ != '*' " + CRLF 
+    cQuery += " LEFT JOIN "+RETSQLNAME("SB2")+" SB2 ON SB2.B2_FILIAL=SB7.B7_FILIAL AND SB2.B2_COD=SB7.B7_COD AND SB2.B2_LOCAL=SB7.B7_LOCAL " + CRLF 
+    cQuery += " WHERE  SUBSTRING(SB7.B7_DATA,1,6) = '"+ SUBSTR(DTOS(MV_PAR03),1,6) +"'" + CRLF 
+    
+    If !EMPTY(MV_PAR01)
+        cQuery += "      AND SB7.B7_LOCAL = '"+MV_PAR01+"'  " + CRLF  
+    EndIf
+
+    cQuery += "     AND SB7.D_E_L_E_T_ != '*' " + CRLF 
+    cQuery += "     AND SB7.B7_QUANT > 0 " + CRLF 
+	
+    If empty(MV_PAR07)
+        cQuery += "     ) TEMP " + CRLF
+    Else
+        cQuery += "     AND SD1.D1_FORNECE = '"+MV_PAR07+"' ) TEMP " + CRLF
+    EndIf    
+    
+    cQuery += " GROUP BY TEMP.FILIAL, TEMP.CODIGO, TEMP.DESCRICAO, TEMP.CODFOR, TEMP.NOME, TEMP.TIPO, TEMP.UN1, TEMP.UN2, TEMP.INI_QTDE_1, " + CRLF
+    cQuery += " TEMP.FIM_QTDE_1, TEMP.INI_QTDE_1, TEMP.INI_QTDE_2, TEMP.FIM_QTDE_2 " + CRLF
+
+    If Select("TRB") > 0
+		Dbselectarea("TRB")
+		TRB->(DbClosearea())
+	EndIf
+
+    TcQuery cQuery New Alias "TRB"
+
+    //Criando o objeto que irá gerar o conteúdo do Excel
+    oFWMsExcel := FWMSExcel():New()
+
+    //Aba 01 - Teste
+    oFWMsExcel:AddworkSheet("Protheus") //Não utilizar número junto com sinal de menos. Ex.: 1-
+
+    //Criando a Tabela
+    oFWMsExcel:AddTable("Protheus","Sugestao Pedidos")
+
+    oFWMsExcel:AddColumn("Protheus","Sugestao Pedidos","Filial",1,1) //1 = Modo Texto
+    oFWMsExcel:AddColumn("Protheus","Sugestao Pedidos","Codigo",1,1) //1 = Modo Texto
+    oFWMsExcel:AddColumn("Protheus","Sugestao Pedidos","Descricao",1,1) //1 = Modo Texto
+    oFWMsExcel:AddColumn("Protheus","Sugestao Pedidos","Fornecedor",1,1) //1 = Modo Texto
+    oFWMsExcel:AddColumn("Protheus","Sugestao Pedidos","Nome",1,1) //1 = Modo Texto    
+    oFWMsExcel:AddColumn("Protheus","Sugestao Pedidos","Tipo",1,1) //1 = Modo Texto
+    oFWMsExcel:AddColumn("Protheus","Sugestao Pedidos","Unidade",1,1) //1 = Modo Texto
+    oFWMsExcel:AddColumn("Protheus","Sugestao Pedidos","Inicial Qtde",2,2) //2 = Valor sem R$
+    oFWMsExcel:AddColumn("Protheus","Sugestao Pedidos","Entradas Qtde",2,2) //2 = Valor sem R$
+    oFWMsExcel:AddColumn("Protheus","Sugestao Pedidos","Final Qtde",2,2) //2 = Valor sem R$
+    oFWMsExcel:AddColumn("Protheus","Sugestao Pedidos","Consumo Qtde ",2,2) //2 = Valor sem R$
+    oFWMsExcel:AddColumn("Protheus","Sugestao Pedidos","Dias Consumo",2,2) //2 = Valor sem R$
+    oFWMsExcel:AddColumn("Protheus","Sugestao Pedidos","Dias Pedido",2,2) //2 = Valor sem R$
+    oFWMsExcel:AddColumn("Protheus","Sugestao Pedidos","Margem Seguranca",2,2) //2 = Valor sem R$
+    oFWMsExcel:AddColumn("Protheus","Sugestao Pedidos","Sugestao SM Pedidos ",2,2) //2 = Valor sem R$
+    oFWMsExcel:AddColumn("Protheus","Sugestao Pedidos","Margem",2,2) //2 = Valor sem R$
+    oFWMsExcel:AddColumn("Protheus","Sugestao Pedidos","Sugestao CM Pedidos ",2,2) //2 = Valor sem R$
+
+    Do While TRB->(!EOF())
+
+        nConsumo := round(( IIF(TRB->UN1 $ "UN/KG/L ", TRB->CON_QTDE_1, TRB->CON_QTDE_2) *1 / MV_PAR04 ) * MV_PAR05,0)
+        nMargem  := round(nConsumo * VAL(MV_PAR06) / 100,0)   
+
+        oFWMsExcel:AddRow("Protheus","Sugestao Pedidos",{;
+                TRB->FILIAL,;
+                TRB->CODIGO,;
+                TRB->DESCRICAO,;
+                TRB->CODFOR,;
+                TRB->NOME,;
+                TRB->TIPO,;                
+                IIF(TRB->UN1 $ "UN/KG/L ", TRB->UN1, TRB->UN2),;
+                IIF(TRB->UN1 $ "UN/KG/L ", INI_QTDE_1, TRB->INI_QTDE_2),;
+                IIF(TRB->UN1 $ "UN/KG/L ", TRB->ENT_QTDE_1, TRB->ENT_QTDE_2),;
+                IIF(TRB->UN1 $ "UN/KG/L ", TRB->FIM_QTDE_1, TRB->FIM_QTDE_2),;
+                IIF(TRB->UN1 $ "UN/KG/L ", TRB->CON_QTDE_1, TRB->CON_QTDE_2),;
+                MV_PAR04,;
+                MV_PAR05,;
+                VAL(MV_PAR06) / 100,;
+                nConsumo,;
+                nMargem,;
+                nConsumo + nMargem })
+
+        TRB->(dbSkip())
+    Enddo    
+
+     //Ativando o arquivo e gerando o xml
+    oFWMsExcel:Activate()
+    oFWMsExcel:GetXMLFile(cArquivo)
+         
+    //Abrindo o excel e abrindo o arquivo xml
+    oExcel := MsExcel():New()           //Abre uma nova conexão com Excel
+    oExcel:WorkBooks:Open(cArquivo)     //Abre uma planilha
+    oExcel:SetVisible(.T.)              //Visualiza a planilha
+    oExcel:Destroy()                    //Encerra o processo do gerenciador de tarefas
+
+    RestArea(aArea)
+
+Return

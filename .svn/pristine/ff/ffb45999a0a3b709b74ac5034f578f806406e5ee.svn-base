@@ -1,0 +1,38 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "totvs_language_debug",
+			"request": "launch",
+			"name": "TOTVS - Bacio",
+			"program": "${command:AskForProgramName}",
+			"cwb": "${workspaceFolder}",
+			"smartclientBin": "C:\\TOTVS\\Clientes\\Bacio\\SmartClients\\Produção\\smartclient.exe",
+			"isMultiSession": true,
+			"enableTableSync": true
+		}
+	],
+	"lastPrograms": [
+		{
+			"args": [],
+			"label": "SIGAADV",
+			"description": ""
+		},
+		{
+			"args": [],
+			"label": "U_BDWFFAT1",
+			"description": ""
+		},
+		{
+			"args": [],
+			"label": "U_BDWFFAT2",
+			"description": ""
+		},
+		{
+			"args": [],
+			"label": "SIGAMDI",
+			"description": ""
+		}
+	],
+	"lastProgramExecuted": "SIGAMDI"
+}

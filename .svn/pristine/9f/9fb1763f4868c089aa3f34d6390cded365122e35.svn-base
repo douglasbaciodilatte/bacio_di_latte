@@ -1,0 +1,25 @@
+
+/*/
+{Protheus.doc} BDSEQLT
+	@Description: Proximo numero sequencia B1_XGRUPO2
+	@author: Felipe Mayer
+	@since: 20/05/2021
+/*/
+
+User Function BDSEQLT()
+
+Local cRet      := ''
+Local cQuery    := ''
+Local cAliasSQL := GetNextAlias()
+
+    cQuery := " SELECT TOP 1 B1_XGRUPO2+1 AS PROX FROM "+RetSQLName('SB1')+" "
+    cQuery += " WHERE D_E_L_E_T_!='*' "
+    cQuery += " ORDER BY B1_XGRUPO2 DESC "
+    
+    MPSysOpenQuery(cQuery,cAliasSQL)
+    
+    cRet := Alltrim((cAliasSQL)->PROX)
+
+    (cAliasSQL)->(DbCloseArea())
+
+Return cRet

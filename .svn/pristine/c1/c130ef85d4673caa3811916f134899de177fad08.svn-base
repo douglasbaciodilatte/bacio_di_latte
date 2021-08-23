@@ -1,0 +1,1513 @@
+#INCLUDE "Protheus.ch"
+#INCLUDE "TBICONN.CH"
+#INCLUDE "TopConn.ch"
+
+static eol := char(13)+char(10)
+
+/*/{Protheus.doc} User Function BDINVIMP
+    (long_description)
+    @type  Function
+    @author user
+    @since 10/04/2020
+    @version version
+    @param param_name, param_type, param_descr
+    @return return_var, return_type, return_description222
+    @example
+    (examples)
+    @see (links_or_references)
+/*/
+
+User Function bdlinv3() 
+Local aPergs   := {}
+Local dDtInv := GetMV('BDIL_DTINV',.t.,"")
+
+Private cDoc    := Space(9)
+Private _cFil   := Space(4)
+Private dData   := SToD('')
+Private _cLocal := Space(6)
+Private aCont   := {"001","002","003","004"}
+Private MV_PAR04
+Private MV_PAR05
+
+if Empty(dDtInv)
+  alert('Parametro  BDIL_DTINV inesxistente ou não preenchido')
+  Return
+endif
+
+  //cAux  := Str(Year(Date()),4) + StrZero(Month(Date())+1,2)+"01"
+  cData := dDtInv
+  cAux  := DtoS(cData) + "C"
+  CDoc := cAux
+  cAux := ""
+
+  aAdd(aPergs, {1, "Filial"         , _cFil  , "", ".T.", "SM0", ".T.", 35, .F.})
+  aAdd(aPergs, {1, "Local"          , _cLocal, "", ".T.", "NNR", ".T.", 35, .F.})
+  //aAdd(aPergs, {1, "Documento"      , cDoc   , "", ".T.", ""   , ".T.", 35, .F.})
+  //aAdd(aPergs, {1, "Data Inventário", dData  , "", ".T.", ""   , ".T.", 60, .F.})
+  aAdd(aPergs, {2, "Contagem"       , "001"  ,aCont  , 099, ".T.", .F.  })
+
+  
+  If ParamBox(aPergs, "Informe os parâmetros para consulta")
+    
+    dbSelectArea("ZZ5")
+    ZZ5->(dbSetOrder(7))
+    ZZ5->(DBGoBottom())
+    
+    MV_PAR05 := MV_PAR03
+    MV_PAR03 := CDoc
+    MV_PAR04 := cData
+    
+    fTelaLact()
+      
+  EndIf
+
+Return
+//********************************************************************************************************************
+
+//********************************************************************************************************************
+
+Static Function fTelaLact()
+
+Local aSize       := {}
+//Local oObjects  := {} 
+Local aInfo       := {} 
+
+Private oDlg
+
+Private oButton1
+Private oButton2
+Private oButton3
+Private oButton4
+
+Private oGet1
+Private oGet2
+Private oGet3
+Private oGet4
+Private oGet5
+Private oGet6
+Private oGet7
+Private oGet8
+Private oGet9
+Private oGet10
+Private oGet11
+Private oGet12
+Private oGet13
+
+Private oSay1
+Private oSay2
+Private oSay3
+Private oSay4
+Private oSay5
+Private oSay6
+Private oSay7
+Private oSay8
+Private oSay9
+Private oSay10
+Private oSay11
+Private oSay12
+Private oSay13
+Private oSay14
+
+Private oCombo
+
+Private cStyle  := ""
+Private cSayCSS := ""
+Private cSayCSSB:= ""
+Private cButton := ""
+Private cGetCSS := ""
+
+Private aObjects := {}
+
+Private oFont12N    := TFont():New('Arial',,30,,.t.,,,,,.F.,.F.)
+//Private cDoc := Space(9)
+Private cGet1 := SPACE(15)
+Private cGet2 := SPACE(60)
+Private cGet4 := SPACE(2)
+Private cGet6 := SPACE(2)
+Private nGet5 := 0
+Private nGet7 := 0
+Private cGet3 := SPACE(len(ZZ5->ZZ5_LOTECT))
+Private dGet8 := Ctod("  /  /  ")
+Private cFiltro := "ZZ5_DOC == cDoc"
+Private cGet9  := MV_PAR02 //SPACE(16)
+Private cGet10 := SPACE(LEN(ZZ5->ZZ5_ENDER))
+Private cGet11 := SPACE(6)
+Private cGet12 := SPACE(6)
+Private aItems := {'D=Direito','E=Esquerdo'}
+Private cCombo := aItems[1]
+
+Private nGet12 := 0
+Private nGet13 := 0 
+Private nGet14 := 0
+Private nAux1 := 0
+Private nAux2 := 0 
+Private cLote := ''
+Private lSalva  := .F.
+
+  dbSelectArea("ZZ5")
+
+  cFiltro := "ZZ5_FILIAL == '" +MV_PAR01 + "' .AND. ZZ5_LOCAL == '" + MV_PAR02 + "' .AND. ZZ5_DOC == '" + MV_PAR03 + "' " // .AND. DtoS(ZZ5_DATA) ==  '" + DTOS(MV_PAR04) + "' "
+
+  Set Filter to &cFiltro 
+
+  ZZ5->(dbSetOrder(3))
+  ZZ5->(DBGoBottom())
+  ZZ5->(DBSEEK(MV_PAR01+MV_PAR03,.T.))
+
+  cConta := IIF(EMPTY(ZZ5->ZZ5_CONTAG), '000',ZZ5->ZZ5_CONTAG)
+  cDoc  := MV_PAR03//ZZ5->ZZ5_DOC
+
+  fCarga()
+  fLimpa()
+
+  // Obtém a a área de trabalho e tamanho da dialog
+  aSize := MsAdvSize()
+  AAdd( aObjects, { 100, 100, .T., .T. } ) // Dados da Enchoice 
+  AAdd( aObjects, { 200, 200, .T., .T. } ) // Dados da getdados 
+
+  // Dados da área de trabalho e separação
+  aInfo   := { aSize[ 1 ], aSize[ 2 ], aSize[ 3 ], aSize[ 4 ], 3, 3 } // Chama MsObjSize e recebe array e tamanhos
+  aPosObj := MsObjSize( aInfo, aObjects,.T.) // Usa tamanhos da dialog
+  nAlt    := 20
+  nLarg   := 200
+  nPosX   := 30
+  nPosY   := 5
+  nEspac  := 25
+  nEspal  := 100
+  nCol2   := 350
+  nCorLetra := 0
+  nCorFundo := 16777215
+
+  lTransparent := .T.
+
+  oDlg:= TDialog():New(aSize[7],0,aSize[6],aSize[5],'Lançamento Inventário',,,,nOr(WS_VISIBLE,WS_POPUP),CLR_BLACK,CLR_WHITE,,,.T.,,,,,,lTransparent)
+
+      oPanel := TPanelCss():New(0,0,nil,oDlg,nil,nil,nil,nil,nil,aSize[5], aSize[6],nil,nil)
+      
+      oSay13 := TSay():New(nPosX += nEspac,nPosY ,{||'Documento:  ' + cDoc + "            Contagem :" + MV_PAR05 },oPanel,,oFont12N,,,,.T.,CLR_RED,CLR_WHITE,nLarg+100,nAlt+10  )
+      
+      oSay1 := TSay():New(nPosX += nEspac,nPosY ,{||'Produto'},oPanel,,oFont12N,,,,.T.,CLR_RED,CLR_WHITE,nLarg,nAlt+10  )
+      oGet1 := TGet():New( nPosX, nPosY + nEspal , {|u|iif(PCount()>0,cGet1 := u, cGet1)}, oPanel, nLarg+200, nAlt, "@!"      , {||BuscDados(1)}, nCorLetra, nCorFundo  , oFont12N,,, .t.,,, /*{||.t.}*/,,,, .F.,.F.,, "cGet1","cGet1",,,.F., .F.,, "", 2, oFont12N, 0, "",, )
+      
+      oSay2 := TSay():New(nPosX += nEspac,nPosY ,{||'Descrição'},oPanel,,oFont12N,,,,.T.,CLR_RED,CLR_WHITE,nLarg,nAlt+10  )
+      oGet2 := TGet():New( nPosX, nPosY + nEspal , {|u|iif(PCount()>0,cGet2 := u, cGet2)}, oPanel, nLarg+200, nAlt, "@!"      , {||.t.}        , nCorLetra, nCorFundo, oFont12N,,, .t.,,, /*{||.t.}*/,,,, .T.,.F.,, "cGet2","cGet2",,,.F., .F.,, "", 2, oFont12N, 0, "",, )
+
+      oSay9 := TSay():New(nPosX += nEspac,nPosY ,{||'Armazem'  },oPanel,,oFont12N,,,,.T.,CLR_RED,CLR_WHITE,nLarg,nAlt+10  )
+      oGet9 := TGet():New( nPosX, nPosY + nEspal , {|u|iif(PCount()>0,cGet9 := u, cGet9)}, oPanel, nLarg, nAlt, "@!", {||.t.} , nCorLetra, nCorFundo, oFont12N,,, .t.,,, /*{||.t.}*/,,,, .T.,.F.,, "cGet9","cGet9",,,.F., .F.,, "", 2, oFont12N, 0, "",, )
+        
+      oSay10 := TSay():New(nPosX /*+= nEspac*/,nPosY+nCol2 ,{||'Endereço'},oPanel,,oFont12N,,,,.T.,CLR_RED,CLR_WHITE,nLarg,nAlt+10  )
+      oGet10 := TGet():New( nPosX, nPosY + nEspal+nCol2 , {|u|iif(PCount()>0,cGet10 := u, cGet10)}, oPanel, nLarg, nAlt, "@!" , {|| BuscDados(3) } , nCorLetra, nCorFundo, oFont12N,,, .t.,,, /*{||.t.}*/,,,, .F.,.F.,, "cGet10","cGet10",,,.F., .F.,, "", 2, oFont12N, 0, "",, )
+  
+      oSay3 := TSay():New(nPosX += nEspac,nPosY ,{||'Lote'},oPanel,,oFont12N,,,,.T.,CLR_RED,CLR_WHITE,nLarg,nAlt+10  )
+      oGet3 := TGet():New( nPosX, nPosY + nEspal , {|u|iif(PCount()>0,cGet3 := u, cGet3)}, oPanel, nLarg, nAlt, "@!"           , {||fValLote()}        , nCorLetra, nCorFundo, oFont12N,,, .t.,,, /*{||.t.}*/,,,, .F.,.F.,, "cGet3","cGet3",,,.F., .F.,, "", 2, oFont12N, 0, "",, )
+    
+      oSay8 := TSay():New(nPosX /*+= nEspac*/,nPosY+nCol2 ,{||'Data de Validade'},oPanel,,oFont12N,,,,.T.,CLR_RED,CLR_WHITE,nLarg,nAlt+10  )
+      oGet8 := TGet():New( nPosX , nPosY + nEspal+nCol2 , {|u|iif(PCount()>0,dGet8 := u, dGet8)}, oPanel, nLarg, nAlt, "@!"      , {||fValData()}        , nCorLetra, nCorFundo, oFont12N,,, .t.,,, /*{||.t.}*/,,,, .F.,.F.,, "dGet8","dGet8",,,.F., .F.,, "", 2, oFont12N, 0, "",, )
+    
+      oSay4 := TSay():New(nPosX += nEspac,nPosY ,{||'Unidade 1'},oPanel,,oFont12N,,,,.T.,CLR_RED,CLR_WHITE,nLarg,nAlt+10  )
+      oGet4 := TGet():New( nPosX, nPosY + nEspal , {|u|iif(PCount()>0,cGet4 := u, cGet4)}, oPanel, nLarg, nAlt, "@!"           , {||.t.}        , nCorLetra, nCorFundo, oFont12N,,, .t.,,, /*{||.t.}*/,,,, .T.,.F.,, "cGet4","cGet4",,,.F., .F.,, "", 2, oFont12N, 0, "",, )
+    
+      oSay6 := TSay():New(nPosX /*+= nEspac*/,nPosY +nCol2,{||'Unidade 2'},oPanel,,oFont12N,,,,.T.,CLR_RED,CLR_WHITE,nLarg,nAlt+10  )
+      oGet6 := TGet():New( nPosX, nPosY + nEspal+nCol2 , {|u|iif(PCount()>0,cGet6 := u, cGet6)}, oPanel, nLarg, nAlt, "@!"           , {||.T.}        , nCorLetra, nCorFundo, oFont12N,,, .t.,,, /*{||.t.}*/,,,, .T.,.F.,, "cGet6","cGet6",,,.F., .F.,, "", 2, oFont12N, 0, "",, )
+
+      oSay5 := TSay():New(nPosX += nEspac,nPosY ,{||'Quant.Total 1'},oPanel,,oFont12N,,,,.T.,CLR_RED,CLR_WHITE,nLarg,nAlt+10  )
+      oGet5 := TGet():New( nPosX, nPosY + nEspal , {|u|iif(PCount()>0,nGet5 := u, nGet5)}, oPanel, nLarg, nAlt, "@E 999,999.99", {||Positivo()/*,Conv1Un()*/} , nCorLetra, nCorFundo, oFont12N,,, .t.,,, /*{||.t.}*/,,,, .T.,.F.,, "nGet5","nGet5",,,.F., .F.,, "", 2, oFont12N, 0, "",, )
+      
+      oSay7 := TSay():New(nPosX /*+= nEspac*/,nPosY+nCol2 ,{||'Quant.Total 2'},oPanel,,oFont12N,,,,.T.,CLR_RED,CLR_WHITE,nLarg,nAlt+10  )
+      oGet7 := TGet():New( nPosX, nPosY + nEspal+nCol2 , {|u|iif(PCount()>0,nGet7 := u, nGet7)}, oPanel, nLarg, nAlt, "@E 999,999.99", {||Positivo()/*,Conv2Un()*/} , nCorLetra, nCorFundo/7, oFont12N,,, .t.,,, /*{||.t.}*/,,,, .T.,.F.,, "nGet7","nGet7",,,.F., .F.,, "", 2, oFont12N, 0, "",, )
+      
+      oSay12 := TSay():New(nPosX += nEspac,nPosY ,{||'Quantidade 1'},oPanel,,oFont12N,,,,.T.,CLR_RED,CLR_WHITE,nLarg,nAlt+10  )
+      oGet12 := TGet():New( nPosX, nPosY + nEspal , {|u|iif(PCount()>0,nGet12 := u, nGet12)}, oPanel, nLarg, nAlt, "@E 999,999.99", {||fPosit(nGet12),Conv1Un(),fSoma(1)} , nCorLetra, nCorFundo, oFont12N,,, .t.,,, /*{||.t.}*/,,,, .F.,.F.,, "nGet12","nGet12",,,.F., .F.,, "", 2, oFont12N, 0, "",, )
+      
+      oSay14 := TSay():New(nPosX /*+= nEspac*/,nPosY+nCol2 ,{||'Quantidade 2'},oPanel,,oFont12N,,,,.T.,CLR_RED,CLR_WHITE,nLarg,nAlt+10  )
+      oGet14 := TGet():New( nPosX, nPosY + nEspal+nCol2 , {|u|iif(PCount()>0,nGet14 := u, nGet14)}, oPanel, nLarg, nAlt, "@E 999,999.99", {||fPosit(nGet14),Conv2Un(),fSoma(2)} , nCorLetra, nCorFundo/7, oFont12N,,, .t.,,, /*{||.t.}*/,,,, .F.,.F.,, "nGet14","nGet14",,,.F., .F.,, "", 2, oFont12N, 0, "",, )
+
+      //oSay11 := TSay():New(nPosX += nEspac,nPosY ,{||'Rua'},oPanel,,oFont12N,,,,.T.,CLR_RED,CLR_WHITE,nLarg,nAlt+10  )
+      //oGet11 := TGet():New( nPosX, nPosY + nEspal  , {|u|iif(PCount()>0,cGet11 := u, cGet11)}, oPanel, nLarg, nAlt, "@!", {|| .t. } , nCorLetra, nCorFundo/7, oFont12N,,, .t.,,, /*{||.t.}*/,,,, .F.,.F.,, "cGet11","cGet11",,,.F., .F.,, "", 2, oFont12N, 0, "",, )
+      
+      //oSay12 := TSay():New(nPosX /*+= nEspac*/,nPosY+nCol2 ,{||'Lado'},oPanel,,oFont12N,,,,.T.,CLR_RED,CLR_WHITE,nLarg,nAlt+10  )
+      //oGet12 := TGet():New( nPosX, nPosY + nEspal+nCol2 , {|u|iif(PCount()>0,cGet12 := u, cGet12)}, oPanel, nLarg, nAlt, "@!", {|| .t. } , nCorLetra, nCorFundo/7, oFont12N,,, .t.,,, /*{||.t.}*/,,,, .F.,.F.,, "cGet12","cGet12",,,.F., .F.,, "", 2, oFont12N, 0, "",, )
+      //oCombo := TComboBox():New(nPosX, nPosY + nEspal+nCol2 ,{|u|if(PCount()>0,cCombo:=u,cCombo)}, aItems,nLarg,nAlt,oPanel,,{||.t.},,,,.T.,oFont12N,,,,,,,,'cCombo')
+
+      //oCombo:SetHeight( nAlt + 30)    
+      
+      oGet1:cF3 := "SB1"
+      //oGet9:cF3 := "NNR"
+      oGet10:cF3 := "SBE"
+
+      oButton1:= TButton():New(005, 050, "Salvar "               ,oPanel,{|| pSalvar(.T.), oDlg:Refresh() }, 120, 030,,,.F.,.T.,.F.,,.F.,,,.F. ) 
+      oButton2:= TButton():New(005, 360, "Fechar"                ,oPanel,{|| oDlg:End()                   }, 080, 030,,,.F.,.T.,.F.,,.F.,,,.F. ) 
+      oButton3:= TButton():New(005, 260, "Limpar"                ,oPanel,{|| fLimpa()    , oDlg:Refresh() }, 080, 030,,,.F.,.T.,.F.,,.F.,,,.F. ) 
+      oButton5:= TButton():New(005, 550, "Relatorio de Contagem" ,oPanel,{|| pFinal()    , oDlg:End()     }, 130, 030,,,.F.,.T.,.F.,,.F.,,,.F. ) 
+      
+      //oButton3:= TButton():New(005, 260, "<< Anterior"         ,oPanel,{|| fAnterior() , oDlg:Refresh()}, 80, 030,,,.F.,.T.,.F.,,.F.,,,.F. ) 
+      //oButton4:= TButton():New(005, 350, "Proximo >>"          ,oPanel,{|| fProximo()  , oDlg:Refresh()}, 80, 030,,,.F.,.T.,.F.,,.F.,,,.F. ) 
+      //oButton5:= TButton():New(005, 550, "Bloquear Contagem"  ,oPanel,{|| iif(pFinal() , oDlg:End(),oGet1:SetFocus() ) }, 120, 030,,,.F.,.T.,.F.,,.F.,,,.F. ) 
+      
+      fCSS()
+    oDlg:Activate(,,,.T.,{||},,{||} )
+   
+return .T.
+
+//********************************************************************************************************************
+
+//********************************************************************************************************************
+Static function fPosit(nCampo)
+Local lRet := .T.
+Default nCampo := 0
+
+  if nCampo < 0
+    lRet := .T.
+  Endif
+
+Return lRet
+//********************************************************************************************************************
+
+//********************************************************************************************************************
+static Function fSoma(nCampo)
+Default nCampo := 1
+
+  Do case
+   
+    case MV_PAR05 == '001'
+   
+      nAux1 := ZZ5->ZZ5_QTD11
+      nAux2 := ZZ5->ZZ5_QTD21
+   
+    case MV_PAR05 == '002' 
+   
+      nAux1 := ZZ5->ZZ5_QTD12
+      nAux2 := ZZ5->ZZ5_QTD22
+   
+    case MV_PAR05 == '003' 
+   
+      nAux1 := ZZ5->ZZ5_QTD13
+      nAux2 := ZZ5->ZZ5_QTD23
+   
+    case MV_PAR05 == '004' 
+   
+      nAux1 := ZZ5->ZZ5_QTD14
+      nAux2 := ZZ5->ZZ5_QTD24
+   
+    Otherwise
+   
+      nAux1 := 0
+      nAux2 := 0
+  
+  EndCase
+  
+  if Alltrim (cGet9) $ "700003/800003"
+      
+    if nGet12 <> 0 .or. nAux1 == 0 .or. nGet14 <> 0 .or. nAux2 == 0
+      nGet5 := nGet12
+      nGet7 := nGet14
+    else
+      nGet5 := nAux1
+      nGet7 := nAux2
+    Endif
+ 
+  Else
+ 
+    if nGet12 <> 0 .or. nAux1 == 0 .or. nGet14 <> 0 .or. nAux2 == 0
+ 
+      nGet5 := nGet12 + nAux1
+      nGet7 := nGet14 + nAux2
+ 
+    else
+ 
+      nGet5 := nAux1
+      nGet7 := nAux2
+ 
+     Endif
+ 
+  endif
+
+Return .T.
+
+//********************************************************************************************************************
+
+//********************************************************************************************************************
+Static Function pSalvar(lNovo)
+Local cTexto := ""
+
+  cTexto += "Preencher todos os CAMPOS" + eol
+  cTexto += "Caso o Item não Tenha Lote Preencher com '*'. " + eol
+  cTexto += "Caso o Tenha Data de Validade Preencher com 31/12/2050  " + eol
+
+  Default lNovo := .T.		
+
+  if !fValPreenc()
+
+    Processa( {|| fGrava(lNovo)}, "Salvando Produtos...")
+    fCarga(0,.f.,lNovo)
+    oGet1:SetFocus()
+    oDlg:Refresh()
+
+  Else
+
+    Alert(cTexto)
+
+  Endif
+  
+Return
+
+//********************************************************************************************************************
+
+//********************************************************************************************************************
+Static Function pFinal()
+Local lRet := .T.
+
+Private aCols   := {}
+Private aHeader := {}
+
+   if lRet 		
+
+    Processa( {|| fFinaliza() }, "Finalizando Contagem...")
+
+    if len(aCols) > 0
+      Processa( {|| fGeraExel() }, "Gerando Relatóro de Contagem" )
+    else
+
+      MsgAlert("Contagem não encontrada")
+    endif
+
+  endif
+
+Return lRet
+
+//********************************************************************************************************************
+
+//********************************************************************************************************************
+Static Function BuscDados(nCampo)
+Local lRet := .T.
+Local cChave  := ""
+Local nHande := GetFocus()
+
+Default nCampo := 1
+  
+  if nHande == 4530 .or. nHande == 4528 .or. nHande == 4529 .or. ( nHande ==4512 .and. cLote == 'L')
+    Return lRet
+  EndIf
+  
+  if Empty(cGet1) .and. type('oGet1') == 'O' .and. nCampo == 1
+    Return .F.
+  endif
+  //4512
+  //as vezes o campo cGet1 fica vazio atoa para resolver
+  if Empty(cGet1) .and. type('oGet1') == 'O' .and. nCampo <> 1
+    oGet1:SetFocus()
+    Return .T.
+  
+  Endif
+  
+  if MV_PAR02 $ "700003/800003" // .AND. EMPTY(cGet3) .AND. EMPTY(cGet10)
+
+    cChave := MV_PAR01 + cDoc + cGet1 + MV_PAR02
+    
+    IF nHande == 4514 .or. nHande == 4512
+      cChave += cGet3 + cGet10
+    ENDIF
+    
+  ELSE
+    
+    cChave := MV_PAR01 + cDoc + cGet1 + MV_PAR02 + cGet3 + cGet10 //+ DtoS(dGet8)
+  
+  ENDIF
+  
+  //dbSelectArea("ZZ5")
+  ZZ5->(dbSetOrder(6))
+
+  if !fValBranco()
+
+    If ZZ5->(dbSeek( cChave))
+
+      IF MV_PAR05 == '002' .AND. ZZ5->ZZ5_QTD11 == 0 .and. !empty(cGet10) .and. (iif(ZZ5->ZZ5_CLOTE == 'L',!empty(cGet3),.T.))
+
+        MsgAlert('Produto não possue contagem, Realizar a Contagem 001')     
+        lRet := .F.
+        cGet1 := Space(Len(ZZ5->ZZ5_COD))
+        oGet1:SetFocus()
+
+      elseIF MV_PAR05 >= '003' .AND. ZZ5->ZZ5_QTD12 == 0 .and. !empty(cGet10) .and. (iif(ZZ5->ZZ5_CLOTE == 'L',!empty(cGet3),.T.))
+
+        MsgAlert('Produto não possue contagem, Realizar a Contagem 002')     
+        lRet := .F.
+        cGet1 := Space(Len(ZZ5->ZZ5_COD))
+        oGet1:SetFocus()
+      
+      else
+        if MV_PAR05 >= ZZ5->ZZ5_CONTAG .or. ZZ5->ZZ5_CONTAG == '000'
+          fCarga(nCampo)
+          lRet := .T.
+        else
+          alert("Contagem " + MV_PAR05 + " Deste Produto já foi finalizada")
+          lRet := .F.  
+        Endif
+
+      Endif
+      
+    Else
+        
+      IF MV_PAR05 >= '002'
+
+        MsgAlert('Produto não possue contagem, Realizar a Contagem 001')     
+        lRet := .F.
+        if nHande == 4506
+          cGet1 := Space(Len(ZZ5->ZZ5_COD))
+        endif
+        oGet1:SetFocus()
+
+      else
+
+        DbSelectArea("SB1")
+        SB1->(DbSetOrder(1))
+        
+        IF DbSeek(xFilial("SB1")+cGet1)
+          
+          if SB1->B1_MSBLQL == "1" 
+
+            Alert("Atenção: Produto Bloqueado!")
+            lRet := .F.
+
+          Else
+
+            //cGet1 := SPACE(15)
+            cGet2 := SB1->B1_DESC
+            cGet4 := SB1->B1_UM
+            cGet6 := SB1->B1_SEGUM
+            nGet5 := 0
+            nGet7 := 0
+            cGet9 := MV_PAR02 //SPACE(16)
+            cLote := SB1->B1_RASTRO
+          /*       
+            if nCampo == 1  .and. !Empty(cGet1)      
+              oGet10:SetFocus()
+            endif
+            */
+            lRet := .T.
+
+          endif
+
+        ELSE
+
+          Alert("Produto não Cadastrado!!!! ")
+          lRet := .F.
+
+        ENDIF
+      
+      Endif
+      
+
+    EndIf
+
+  EndIf
+   
+  if type("oGet1") == 'O'
+    if nCampo == 1 .and. !Empty(cGet1)
+      oGet10:SetFocus()
+    elseif Empty(cGet1)
+      oGet1:SetFocus()
+    Endif
+  EndIf
+  
+  if !lRet
+  
+  endif
+    
+  fMCor()
+
+  ZZ5->(DbSetOrder(3))
+
+Return(lRet)
+//********************************************************************************************************************
+
+
+//********************************************************************************************************************
+
+Static Function Conv1Un()
+Local lRet := .T.
+  
+  Do Case
+
+    Case Empty(cGet9) .and. nGet5 > 0
+
+      Alert("Não pode deixar o Armmazem em Branco")
+      nGet5 := 0
+      oGet9:SetFocus()
+
+    Case Empty(cGet10) .and. nGet5 > 0
+
+      Alert("Não pode deixar o Endereço em Branco")
+      nGet5 := 0
+      oGet10:SetFocus()
+
+    Case Empty(dGet8) .and. nGet5 > 0 .And. cLote== "L"
+
+      Alert("Não pode deixar a Data de Validade  em Branco")
+      nGet5 := 0
+      oGet8:SetFocus()
+
+    Case Empty(cGet3) .and. nGet5 > 0 .And. cLote == "L"
+
+      Alert("Não pode deixar a Lote em Branco")
+      nGet5 := 0
+      oGet3:SetFocus()
+
+    OtherWise
+      //nGet7  := ConvUM(cGet1, nGet5,0,   2)
+      nGet14 := ConvUM(cGet1, nGet12,0,   2)
+
+    EndCase
+
+Return(lRet)
+//********************************************************************************************************************
+
+//********************************************************************************************************************
+Static Function Conv2Un()
+Local lRet := .T.
+
+  Do Case
+
+    Case Empty(cGet9) .and. nGet7 > 0
+
+      Alert("Não pode deixar o Armmazem em Branco")
+      nGet7 := 0
+      oGet9:SetFocus()
+
+    Case Empty(cGet10) .and. nGet7 > 0
+
+      Alert("Não pode deixar o Endereço em Branco")
+      nGet7 := 0
+      oGet10:SetFocus()
+
+    Case Empty(dGet8) .and. nGet7 > 0 .And. cLote == "L"
+
+      Alert("Não pode deixar a Data de Validade  em Branco")
+      nGet7 := 0
+      oGet8:SetFocus()
+
+    Case Empty(cGet3) .and. nGet7 > 0 .And. cLote == "L"
+
+      Alert("Não pode deixar a Lote em Branco")
+      nGet7 := 0
+      oGet3:SetFocus()
+
+    OtherWise
+
+      //nGet5  := ConvUM(cGet1,0, nGet7 ,  1)
+      nGet12 := ConvUM(cGet1,0, nGet14,  1)
+
+  EndCase
+
+Return(lRet)
+
+//********************************************************************************************************************
+
+//********************************************************************************************************************
+
+Static Function fCarga(nChave,lMov,lNovo)
+//Local nHande := GetFocus()
+
+Default lNovo := .F.
+Default lMov  := .T.
+Default nChave := 1
+
+  if lMov 
+    nPasso := 1
+  else
+    nPasso := -1
+  EndIf
+  
+  if type('oGet1') == 'O'
+  
+    if MV_PAR05 >= '003' .and. ZZ5->ZZ5_DIF12 == 0 .and. !empty(cGet1) .and. !empty(cGet10) .and. (iif(ZZ5->ZZ5_CLOTE == 'L',!empty(cGet3),.T.))
+  
+      Alert("O Produto Informado não necessita da contagem: " + MV_PAR05)
+      lSalva := .T.
+      oGet1:SetFocus()
+  
+    endif
+  
+  endif
+
+  if lSalva
+
+    cGet1  := SPACE(Len(ZZ5->ZZ5_COD))
+    cGet2  := SPACE(Len(ZZ5->ZZ5_DESCR))
+    cGet3  := Space(len(ZZ5->ZZ5_LOTECT))
+    dGet8  := Ctod("  /  /  ")
+    cGet9  := mv_par02 //Space(6)
+
+    IF MV_PAR02 $ "700003/800003"
+      cGet10 := Space(len(ZZ5->ZZ5_ENDER))
+    ELSE
+      cGet10 := PadR(MV_PAR02, Len(ZZ5->ZZ5_ENDER)," ") //Space(len(ZZ5->ZZ5_ENDER))
+    ENDIF
+
+    cGet4 := SPACE(2)
+    cGet6 := SPACE(2)
+    nGet5 := 0 //ZZ5->ZZ5_QTD11
+    nGet7 := 0 //ZZ5->ZZ5_QTD21.
+    nGet12 := 0
+    nGet14 := 0
+    cLote := ''
+
+  Else
+
+    nGet12 := 0
+    nGet14 := 0
+    cGet1  := ZZ5->ZZ5_COD//SPACE(15)
+    cGet2  := ZZ5->ZZ5_DESCR //SPACE(60)
+    cGet9  := ZZ5->ZZ5_LOCAL
+    cLote  := ZZ5->ZZ5_CLOTE
+
+    if nChave > 1  
+      cGet3  := ZZ5->ZZ5_LOTECT
+    endif
+    
+    if nChave > 2
+
+      if cGet9 $ "700003/800003"
+        cGet10 := ZZ5->ZZ5_ENDER
+      Else
+        cGet10 := PadR(iif(empty(ZZ5->ZZ5_ENDER),MV_PAR02,ZZ5->ZZ5_ENDER), Len(ZZ5->ZZ5_ENDER)," ") 
+      EndIf
+
+    Endif
+
+    dGet8  := ZZ5->ZZ5_DTVALI
+    
+    Do Case
+
+      Case MV_PAR05 == "001" // "001" // "001" // "001" // "001"
+
+        cGet4 := ZZ5->ZZ5_UM11//SPACE(2)
+        cGet6 := ZZ5->ZZ5_UM21
+
+        if lNovo
+          nGet5 := 0 //ZZ5->ZZ5_QTD11
+          nGet7 := 0 //ZZ5->ZZ5_QTD21
+        else
+          nGet5 := ZZ5->ZZ5_QTD11
+          nGet7 := ZZ5->ZZ5_QTD21
+        endif
+
+      Case MV_PAR05 == "002" // "001" // "001" // "001" // "002"
+
+        cGet4 := ZZ5->ZZ5_UM12//SPACE(2
+        cGet6 := ZZ5->ZZ5_UM22
+
+        if lNovo
+          nGet5 := 0 //ZZ5->ZZ5_QTD11
+          nGet7 := 0 //ZZ5->ZZ5_QTD21
+        else
+          nGet5 := ZZ5->ZZ5_QTD12
+          nGet7 := ZZ5->ZZ5_QTD22
+        endif
+
+      Case MV_PAR05 == "003" // "001" // "001" // "001" // "003"
+
+        cGet4 := ZZ5->ZZ5_UM13//SPACE(2)
+        cGet6 := ZZ5->ZZ5_UM23 
+
+        if lNovo
+          nGet5 := 0 //ZZ5->ZZ5_QTD11
+          nGet7 := 0 //ZZ5->ZZ5_QTD21
+        else
+          nGet5 := ZZ5->ZZ5_QTD13
+          nGet7 := ZZ5->ZZ5_QTD23
+        endif
+
+      Case MV_PAR05 == "004" // "001" // "001" // "001" // "004"
+
+        cGet4 := ZZ5->ZZ5_UM14//SPACE(2)
+        cGet6 := ZZ5->ZZ5_UM24
+
+        if lNovo
+          nGet5 := 0 //ZZ5->ZZ5_QTD11
+          nGet7 := 0 //ZZ5->ZZ5_QTD21
+        else
+          nGet5 := ZZ5->ZZ5_QTD14
+          nGet7 := ZZ5->ZZ5_QTD24
+        endif
+
+      OtherWise 
+
+        cGet4 := SPACE(2)
+        cGet6 := Space(2)
+        nGet5 := 0
+        nGet7 := 0
+
+      EndCase
+    endif
+
+    lSalva := .F.
+
+    if type('oDlg') == 'O'
+      oDlg:Refresh()
+    endif
+    /*
+    IF nChave >= 2
+      if cLote == 'L'
+        alert("ATENÇÃO" + eol + eol +  " Produto e Lote Encontrado na Contagem. " + eol + eol + " FAVOR REVISAR!")  
+      //Else
+      //  alert("ATENÇÃO" + eol + eol +  " Produto já foi Contado. " )  
+      endif
+    Endif
+    */
+
+  
+Return
+//********************************************************************************************************************
+ 
+//********************************************************************************************************************
+Static Function fGrava(lNovo)
+local lSoma := .F.
+
+Default lNovo := .F.
+
+  lSalva := lNovo
+
+  if AllTrim(MV_PAR02) $ "700003/800003"
+    lSoma := .F.
+  Else
+    lSoma := .T.
+  endif
+
+  if lNovo
+
+    dDt   := MV_PAR04//ZZ5->ZZ5_DATA
+    cHora := ZZ5->ZZ5_HORA
+    cBlq  := ZZ5->ZZ5_PROBLO
+
+  endif
+  
+  nRec := ZZ5->(Recno())
+
+  cChave := MV_PAR01 + cDoc + cGet1 + MV_PAR02 + cGet3 + cGet10 //+ DtoS(dGet8)
+
+    ZZ5->(DbSetOrder(6))
+  
+    IF ZZ5->(DBSEEK(cChave))
+
+      While cChave == ZZ5->(ZZ5_FILIAL + ZZ5_DOC + ZZ5_COD + ZZ5_LOCAL + ZZ5_LOTECT + ZZ5_ENDER )
+
+        IF dGet8 == ZZ5->ZZ5_DTVALI
+          lNovo := .F.
+          Exit
+        ELSE
+          lNovo := .T.
+        EndiF
+
+        ZZ5->(dbSKip())
+
+      EndDo
+      
+    Else
+      lNovo := .T.
+    EndIf
+
+  lSoma := .F.
+
+  BEGIN TRANSACTION
+
+    RecLock("ZZ5",lNovo) 
+  
+      if lNovo
+
+        ZZ5->ZZ5_FILIAL := MV_PAR01
+        ZZ5->ZZ5_COD    := cGet1
+        ZZ5->ZZ5_DESCR  := cGet2
+        ZZ5->ZZ5_DOC    := cDoc
+        ZZ5->ZZ5_DATA   := dDt
+        ZZ5->ZZ5_PROBLO := cBlq
+        ZZ5->ZZ5_CLOTE  := cLote
+
+      endif  
+
+      ZZ5->ZZ5_LOTECT := cGet3
+      ZZ5->ZZ5_DTVALI := dGet8
+      ZZ5->ZZ5_LOCAL  := cGet9
+      ZZ5->ZZ5_ENDER  := cGet10
+      ZZ5->ZZ5_HORA   := Time() 
+      ZZ5->ZZ5_OBS    := RetCodUsr() +'-'+ substr(UsrFullName(RetCodUsr()),1,12) +"-"+ DtoC(DATE()) + '-' + time()
+      //ZZ5->ZZ5_LADO  := SUBSTR(cCombo,1,1)
+
+      ZZ5->ZZ5_UM11 := cGet4 
+      ZZ5->ZZ5_UM21 := cGet6
+      
+      ZZ5->ZZ5_UM12 := cGet4 
+      ZZ5->ZZ5_UM22 := cGet6
+      
+      ZZ5->ZZ5_UM13 := cGet4 
+      ZZ5->ZZ5_UM23 := cGet6
+      
+      ZZ5->ZZ5_UM14 := cGet4 
+      ZZ5->ZZ5_UM24 := cGet6
+      
+      if ZZ5->ZZ5_CONTAG < MV_PAR05
+        ZZ5->ZZ5_CONTAG := MV_PAR05
+      endif
+      
+      
+      Do Case
+        Case MV_PAR05 == "001" // "001" // "001" // "001" // 1
+
+          ZZ5->ZZ5_STATUS := "10"
+          ZZ5->ZZ5_QTD11  := iif(lSoma, ZZ5->ZZ5_QTD11 + nGet5 , nGet5)
+          ZZ5->ZZ5_QTD21  := iif(lSoma, ZZ5->ZZ5_QTD21 + nGet7 , nGet7)
+          ZZ5->ZZ5_DIF12  := ZZ5->ZZ5_QTD11 - ZZ5->ZZ5_QTD12
+          ZZ5->ZZ5_CONT3  := "2" 
+
+        Case MV_PAR05 == "002" // "001" // "001" // "001" // 2 
+          
+          ZZ5->ZZ5_QTD12  := iif(lSoma, ZZ5->ZZ5_QTD12 + nGet5 , nGet5)
+          ZZ5->ZZ5_QTD22  := iif(lSoma, ZZ5->ZZ5_QTD22 + nGet7 , nGet7)
+          ZZ5->ZZ5_DIF12  := ZZ5->ZZ5_QTD11 - ZZ5->ZZ5_QTD12
+          ZZ5->ZZ5_STATUS := "10"
+          
+          IF ZZ5->ZZ5_DIF12 <> 0
+            ZZ5->ZZ5_CONT3  := "1" 
+          ELSE
+            ZZ5->ZZ5_CONT3  := "2" 
+          ENDIF
+          
+        Case MV_PAR05 == "003" // "001" // "001" // "001" // 3 .and. !lNovo
+          
+          ZZ5->ZZ5_QTD13 := iif(lSoma, ZZ5->ZZ5_QTD13 + nGet5 , nGet5)
+          ZZ5->ZZ5_QTD23 := iif(lSoma, ZZ5->ZZ5_QTD23 + nGet7 , nGet7)
+          
+          a1 := ZZ5->ZZ5_QTD13 - ZZ5->ZZ5_QTD11
+          a2 := ZZ5->ZZ5_QTD13 - ZZ5->ZZ5_QTD12
+          
+          ZZ5->ZZ5_DIF3  := fValDif(a1,a2)
+          
+          ZZ5->ZZ5_STATUS := "10"
+        
+          IF ZZ5->ZZ5_QTD11 == ZZ5->ZZ5_QTD13 .or. ZZ5->ZZ5_QTD12 == ZZ5->ZZ5_QTD13
+            ZZ5->ZZ5_CONT4  := "2" 
+          ELSE
+            ZZ5->ZZ5_CONT4  := "1" 
+          ENDIF
+
+        Case MV_PAR05 == "004" // "001" // "001" // "001" // 4 
+                    
+          ZZ5->ZZ5_QTD14 := iif(lSoma, ZZ5->ZZ5_QTD14 + nGet5 , nGet5) //nGet5
+          ZZ5->ZZ5_QTD24 := iif(lSoma, ZZ5->ZZ5_QTD24 + nGet7 , nGet7)
+          ZZ5->ZZ5_DIF4  := ZZ5->ZZ5_QTD14 - ZZ5->ZZ5_QTD13
+          ZZ5->ZZ5_STATUS := "10"
+          
+          IF ZZ5->ZZ5_DIF3 <> 0 .AND. ZZ5->ZZ5_DIF4 <> 0
+            ZZ5->ZZ5_CONT4  := "1" 
+          ELSE
+            ZZ5->ZZ5_CONT4  := "2" 
+          ENDIF
+
+      EndCase
+
+    ZZ5->(MsUnLock())
+  
+  END TRANSACTION
+  
+  if cLote == "L" .and.  !lNovo
+   /* 
+    if MsgYesNo('Produto com Controle de Lote, Incluir Novo Lote?')
+      lNovo := fGrava(.t.)
+    endif
+  */
+  EndIf
+ 
+  oDlg:Refresh()
+  ZZ5->(dbSetOrder(3))
+
+Return lNovo
+
+//************************************************************************************************
+
+//************************************************************************************************
+
+Static function fValLote(lVisual)
+Local lRet := .t.
+//Local cLote := Posicione("SB1",1,xFilial("SB1")+cGet1,"B1_RASTRO")
+Default lVisual := .T.
+
+  if cLote == "L" .and. empty(cGet3)
+
+    if lVisual
+      Alert("Obrigatório Informar o Lote...")
+    endif
+
+    lRet := .F.
+
+  Else
+
+      lRet := .T.
+  EndIf
+
+  BuscDados(2)
+  oDlg:Refresh()
+
+Return lRet
+
+//*************************************************************************************************.
+
+
+//**************************************************************************************************
+
+Static Function fValData(lVisual)
+Local lRet := .T. //fValLote(.f.)
+//Local cLote := Posicione("SB1",1,xFilial("SB1")+cGet1,"B1_RASTRO")
+
+  if cLote == "L" .and. empty(dGet8) 
+
+    if lVisual
+      Alert("Preenchimeto da Data de Validade Obrigatorio")
+    endif
+
+    lRet := .F.
+
+  Else
+
+    lRet := .T.
+
+  EndIf
+  
+  if !empty(dGet8) .and. dGet8 <= Date()
+
+    If MsgYesNo("Produto Vencido ou Data Digitada Errada " + eol + "Manter Data de Validade??")
+      lRet := .T.
+    else
+      lRet := .F.
+    endif
+
+  endif
+  //BuscDados(4)
+  oGet12:SetFocus()
+  oDlg:Refresh()
+
+Return lRet
+//********************************************************************************************************************
+ 
+//********************************************************************************************************************
+
+
+Static Function fFinaliza()
+  Local aAux   := {}
+  Local aCampo := ZZ5->(DBSTRUCT())
+  Local cDes   := ''
+
+  For nX := 1 To Len(aCampo)
+    cDes := GetSx3Desc(aCampo[nX,1])
+    aadd(aHeader,{cDes,aCampo[nX,1],aCampo[nX,2],aCampo[nX,3],aCampo[nX,4]})
+  Next nX
+
+
+  DbSelectArea("ZZ5")
+  /*dbSetOrder(7)
+  if ZZ5->(DBSEEK(MV_PAR01 + MV_PAR03 + mv_par02 + SPACE(len(ZZ5->ZZ5_COD))  ))
+    RecLock("ZZ5",.F.)
+      //ZZ5->ZZ5_CONTAG := MV_PAR05
+      ZZ5->ZZ5_STATUS := "99"
+    ZZ5->(MsUnLock())
+  EndIf
+*/
+  ZZ5->(DbSetOrder(3))
+  ZZ5->(DbSeek(MV_PAR01 + cDoc,.T.))
+
+  WHILE ZZ5->(!Eof()) .AND. ZZ5->ZZ5_FILIAL == MV_PAR01.AND. cDoc == ZZ5->ZZ5_DOC .and. MV_PAR02 == ZZ5->ZZ5_LOCAL
+    RecLock("ZZ5",.F.)
+      
+      ZZ5->ZZ5_STATUS := "99"
+      //ZZ5->ZZ5_CONTAG := MV_PAR05
+      //if empty(ZZ5->ZZ5_DATA) 
+      //  ZZ5->ZZ5_DATA := MV_PAR04
+      //endif
+      
+      
+      /*
+      Do Case
+        Case MV_PAR05 == "001"
+          
+          if ZZ5->ZZ5_STATUS == "11"
+            ZZ5->ZZ5_STATUS := "05"
+          Else
+            ZZ5->ZZ5_STATUS := "99"
+          EndIf
+        Case MV_PAR05 == "002"
+          if ZZ5->ZZ5_STATUS == "21"
+            ZZ5->ZZ5_STATUS := "05"
+          Elseif ZZ5->ZZ5_STATUS == "22"
+            ZZ5->ZZ5_STATUS := "35"
+          Else
+            ZZ5->ZZ5_STATUS := "99"
+          EndIf
+        Case MV_PAR05 == "003"
+          if ZZ5->ZZ5_STATUS == "31"
+            ZZ5->ZZ5_STATUS := "41"
+          Elseif ZZ5->ZZ5_STATUS == "32"
+            ZZ5->ZZ5_STATUS := "40"
+          Else
+            ZZ5->ZZ5_STATUS := "99"
+          EndIf
+        Case MV_PAR05 == "004"
+           if ZZ5->ZZ5_STATUS == "41"
+            ZZ5->ZZ5_STATUS := "42"
+          Else
+            ZZ5->ZZ5_STATUS := "99"
+          EndIf
+          
+        EndCase
+        */
+    ZZ5->(MsUnLock())
+    aAux :={}
+    
+    For nX := 1 to len(aCampo)
+      aadd(aAux,ZZ5->&(aCampo[nX,1]))
+    Next nX
+
+    aadd(aCols,aAux)  
+  
+    ZZ5->(dbSkip())
+  
+  ENDDO
+  
+Return
+
+Static Function fMCor()
+//Local cLote := Posicione("SB1",1,xFilial("SB1")+cGet1,"B1_RASTRO")
+  
+  If cLote == "L"
+
+    oSay3:SetCss(cSayCSSB)
+    oSay8:SetCss(cSayCSSB)
+
+  else
+
+    oSay3:SetCss(cSayCSS)
+    oSay8:SetCss(cSayCSS)
+
+  Endif
+
+Return 
+
+//***************************************************************************************************
+
+//***************************************************************************************************
+
+Static Function fValBranco()
+Local lRet  := .F.
+//Local cLote := Posicione("SB1",1,xFilial("SB1")+cGet1,"B1_RASTRO")
+
+  if cLote == "L" .AND. (empty(cGet3) .or. Empty(dGet8))
+    lRet := .T.
+  EndIF
+
+Return ( lRet .and. empty(cGet1) .and. empty(cGet9) .and. empty(cGet10) )
+
+//***************************************************************************************************
+
+//***************************************************************************************************
+
+Static Function fValPreenc()
+Local lRet := .F.
+//Local cLote := Posicione("SB1",1,xFilial("SB1")+cGet1,"B1_RASTRO")
+
+  if cLote == "L" .AND. (empty(cGet3) .or. Empty(dGet8))
+    lRet := .T.
+  EndIf
+
+Return ( empty(cGet1) .or. Empty(cGet9) .or. lRet .or. empty(cGet10) )
+
+//***************************************************************************************************
+
+//***************************************************************************************************
+/*
+Static Function fContIni()
+
+  BEGIN TRANSACTION
+    Reclock("ZZ5",.T.) 
+      ZZ5->ZZ5_FILIAL := MV_PAR01
+      ZZ5->ZZ5_DATA   := MV_PAR04
+      ZZ5->ZZ5_DOC    := cDoc
+      //ZZ5->ZZ5_DESCR  := SB1->B1_DESC
+      ZZ5->ZZ5_HORA   := TIME()
+      ZZ5->ZZ5_PROBLO := SB1->B1_MSBLQL
+      ZZ5->ZZ5_LOCAL  := MV_PAR02
+      ZZ5->ZZ5_CONTAG := "000"
+      //ZZ5->ZZ5_LADO   := aLocal[nX,5]
+    ZZ5->(MsUnlock())
+  END TRANSACTION
+
+return
+*/                
+//********************************************************************************************************
+
+//********************************************************************************************************
+
+Static Function fLimpa()
+local cChave := ""
+
+  lSalva := .T.
+
+  cChave := MV_PAR01 + cDoc + cGet1 + MV_PAR02 + cGet3 + cGet10 //+ DtoS(dGet8)
+
+  fCarga( )
+
+Return
+
+//********************************************************************************************************************
+ 
+//********************************************************************************************************************
+
+Static Function fCSS()
+//Local cLote := Posicione("SB1",1,xFilial("SB1")+cGet1,"B1_RASTRO")
+
+  cStyle := "QFrame{"
+  cStyle += " border-style:solid;"
+  cStyle += " border-width:1px;"
+  cStyle += " border-color:#096A82;"
+  cStyle += " background-color:#35ACCA "
+  cStyle += "}"
+
+  cSayCSS := "TSay{"
+  cSayCSS += " border: none;"
+  //cSayCSS += " border-radius: 5px;"
+  cSayCSS += " background-color: #35ACCA;"
+  cSayCSS += " selection-background-color: #ffffff;"
+  cSayCSS += " background-repeat: no-repeat; "
+  cSayCSS += " background-attachment: fixed; "
+  //cSayCSS += " padding-left:25px; "
+  //cSayCSS += " font: normal 24px Arial;"
+  cSayCSS += " }"
+
+  cSayCSSB := "TSay{"
+  cSayCSSB += " border: none;"
+  //cSayCSS += " border-radius: 5px;"
+  cSayCSSB += " background-color: #35ACCA;"
+  cSayCSSB += " selection-background-color: #ffffff;"
+  cSayCSSB += " background-repeat: no-repeat; "
+  cSayCSSB += " background-attachment: fixed; "
+  //cSayCSS += " padding-left:25px; "
+  cSayCSSB += " color: #ff0000;"
+  cSayCSSB += " }"
+
+  cGetCSS := "TGet{"
+  //cGetCSS += " border: none;"
+  //cGetCSS += " border-radius: 5px;"
+  cGetCSS += " background-color: #AAAAAA;"
+  //cGetCSS += " selection-background-color: #ffffff;"
+  //cGetCSS += " background-repeat: no-repeat; "
+  //cGetCSS += " background-attachment: fixed; "
+  //cSayCSS += " padding-left:25px; "
+  //cSayCSS += " font: normal 24px Arial;"
+  cGetCSS += " }"
+
+  /*
+  cGetCSS += "TGet:pressed{"
+  cGetCSS += " border: none;"
+  cGetCSS += " border-radius: 5px;"
+  cGetCSS += " background-color: #35ACCA;"
+  cGetCSS += " selection-background-color: #ffffff;"
+  cGetCSS += " background-repeat: no-repeat; "
+  cGetCSS += " background-attachment: fixed; "
+  //cSayCSS += " padding-left:25px; "
+  //cSayCSS += " font: normal 24px Arial;"
+  cGetCSS += " }"*/
+
+  cButton := "QPushButton {"
+  cButton += " background: #0036EC;"
+  cButton += "  border: 2px solid #000044;"
+  cButton += "  outline:0;"
+  cButton += "  border-radius: 5px;"
+  cButton += "  font: normal 24px Arial;"
+  cButton += "  padding: 6px;"
+  cButton += "  color: #ffffff;"
+  cButton += "}"
+
+  cButton += " QPushButton:pressed {"
+  cButton += "  background-color: #3AAECB;"
+  cButton += "  border: 2px ;
+  cButton += "  border-style: inset; "
+  cButton += "  border-color: #000044; " //35ACCA
+  cButton += "  color: #ffffff;"
+  cButton += "}"
+
+  oPanel:setCSS(cStyle)
+  
+  oSay1:SetCss(cSayCSSB)
+  oSay2:SetCss(cSayCSS)
+  oSay3:SetCss(cSayCSS)
+  oSay4:SetCss(cSayCSS)
+  oSay5:SetCss(cSayCSS)
+  oSay6:SetCss(cSayCSS)
+  oSay7:SetCss(cSayCSS)
+  
+  
+  if cLote == 'L'
+    oSay8:SetCss(cSayCSSB )
+    oSay9:SetCss(cSayCSSB )
+  Else
+    oSay8:SetCss(cSayCSS  )
+    oSay9:SetCss(cSayCSS  )
+    
+  EndIf
+
+  oSay10:SetCss(cSayCSSB)
+  //oSay11:SetCss(cSayCSS)
+  oSay12:SetCss(cSayCSSB)
+  oSay13:SetCss(cSayCSSB)
+  oSay14:SetCss(cSayCSSB)
+  //oGet2:SetCss(cGetCSS)
+  oButton1:SetCss(cButton)
+  oButton2:SetCss(cButton)
+  oButton3:SetCss(cButton)
+  //oButton4:SetCss(cButton)
+  oButton5:SetCss(cButton)
+
+ Return
+
+//*******************************************************************************************************
+
+//*******************************************************************************************************
+/*
+Static Function fPass()
+Local cPass := Space(8)
+
+
+  oPass:= TDialog():New(10,10,150,400,'Senha',,,,nOr(WS_VISIBLE,WS_POPUP),CLR_BLACK,CLR_WHITE,,,.T.,,,,,,)
+  //DEFINE MSDIALOG oDlg TITLE "Lançamento Inventário" FROM aSize[7], 000  TO aSize[6], aSize[5] COLORS nCorLetra, nCorFundo of oMainWnd PIXEL
+    oPnPass:= TPanelCss():New(0,0,nil,oPass,nil,nil,nil,nil,nil,200,500,nil,nil)
+    
+    oSPass  := TSay():New(15,10,{||'Digite a Senha...'},oPnPass,,oFont12N,,,,.T.,CLR_RED,CLR_WHITE,50,15  )
+    //oGtPass := TGet():New(10,60,{|u|iif(PCount()>0,cPass := u, cPass)}, oPnPass, 60, 15, "@!"      , {||.t.}, /*nCorLetra*///, /*nCorFundo*/  , /*oFont12N*/ //,,, .t.,,, /*{||.t.}*/,,,, .F.,.T.,,,"cPass",,,.F., .F.,, "", 2, oFont12N, 0, "",, )
+    
+    //oPassOk := TButton():New(035, 010, "Ok"              ,oPnPass,{|| lRet := fvalPass(cPass),oPass:End() }, 40, 015,,,.F.,.T.,.F.,,.F.,,,.F. ) 
+    //oPassCan:= TButton():New(035, 060, "Cancelar"        ,oPnPass,{|| lRet := .F., oPass:End()            }, 40, 015,,,.F.,.T.,.F.,,.F.,,,.F. ) 
+    
+  //  fCSS()
+  //oPass:Activate(,,,.T.,{||},,{||} )
+  
+
+//return lRet
+
+//********************************************************************************************************
+
+//********************************************************************************************************
+/*
+Static Function fvalPass(cPass)
+Local lRet := .T.
+Default cPass := space(8)
+
+  if alltrim(cPass) == '123456' //dtos(Date())
+    lRet := .T.
+  Else
+    lRet := .F.
+    Alert("Senha Invalida!")
+  EndIF
+
+Return lRet
+*/
+//********************************************************************************************************************
+
+//********************************************************************************************************************
+
+Static Function fGeraExel()
+	//Local oModelDad := FWModelActive()
+Local cDoc      := MV_PAR03
+Local cLocal    := MV_PAR02
+Local cPlanilha := "Contagem - " + cDoc + " - " + cLocal
+Local cTabela   := "Armazém - " + cLocal + "-" + MV_PAR05 
+Local cPasta 	  := ""
+Local cArq   	  := "Armazem_" + cLocal + "_" + MV_PAR05 + "_" + StrTran(time(),":","")
+Local nX        := 0
+Local nTipo     := 1
+Local nAlinha   := 1
+Local aDados 	  := {}
+Local aCor 		  := {}
+Local lX 		    := .T.
+Local nPosQtd11 := aScan(aHeader, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_QTD11"  )})
+Local nPosQtd12 := aScan(aHeader, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_QTD12"  )})
+Local nPosQtd13 := aScan(aHeader, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_QTD13"  )})
+Local nPosQtd14 := aScan(aHeader, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_QTD14"  )})
+Local nPosQtd21 := aScan(aHeader, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_QTD21"  )})
+Local nPosQtd22 := aScan(aHeader, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_QTD22"  )})
+Local nPosQtd23 := aScan(aHeader, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_QTD23"  )})
+Local nPosQtd24 := aScan(aHeader, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_QTD24"  )})
+Local nPosdif   := aScan(aHeader, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_DIF12"  )})
+
+	cPasta := cGetFile("", "Salvar Arquivo em", 1, "C:\", .T., GETF_LOCALHARD+GETF_NETWORKDRIVE+GETF_RETDIRECTORY) 
+
+	//Cria o Objeto para criar a Planilha XML
+	oExcel := FwMsExcelEx():New()
+
+	//Define a Planilha
+	oExcel:AddWorkSheet(cPlanilha)
+
+	//Define a Tabela na Planilha
+	oExcel:AddTable(cPlanilha,cTabela)
+
+	for nX := 1 to len(aHeader)-3
+
+		Do Case
+
+			Case aHeader[nX,3] == 'N'
+
+				nTipo   := 2
+				nAlinha := 3
+
+			Case aHeader[nX,3] == 'D'
+
+				nTipo   := 1
+				nAlinha := 1
+
+			OtherWise
+
+				nTipo   := 1
+				nAlinha := 1
+
+		EndCase
+
+		//xHeader[nX,2]
+		//Define as Colunas da Planilha
+		oExcel:AddColumn(cPlanilha , cTabela , aHeader[nX,1] , nAlinha , nTipo , .f. ) //1
+
+	Next nX
+
+	lBold := .F.
+
+	For nX := 1 to Len(aCols)
+
+		aDados := {}
+		aCor := {}
+
+		For nY := 1 to Len(aCols[nX]) - 3
+			
+			if Valtype(aCols[nX,nY]) == 'D'
+
+				aAdd(aDados,DtoS(aCols[nX,nY])) 
+
+			else
+
+				aAdd(aDados,aCols[nX,nY])
+
+			endif
+
+			IF nY == nPosQtd11 .OR. nY == nPosQtd12 .OR. nY == nPosQtd13 .OR. nY == nPosQtd14 .OR. ;
+         nY == nPosQtd21 .OR. nY == nPosQtd22 .OR. nY == nPosQtd23 .OR. nY == nPosQtd24 .OR. nY == nPosdif
+
+				IF nY == nPosdif .AND. aCols[nX,nY] <> 0
+
+					aadd(aCor,nY)
+					lBold := .T.
+
+				ENDIF
+
+				IF nY <> nPosdif
+
+					aadd(aCor,nY)
+					
+				ENDIF
+
+			ENDIF
+
+		Next nY
+		
+		IF lX
+
+			oExcel:SetCelBgColor("#F4B084")
+			//oExcel:SetLineBold(lBold)
+			//oExcel:SetCelBold(lBold)
+
+		ELSE
+
+			oExcel:SetCelBgColor("#FADCCA")
+			//oExcel:Set2LineBold(lBold)
+			//oExcel:SetCelBold(lBold)
+
+		EndIf
+
+		lX := !lX
+
+		//Inseri os Dados nas Celulas
+		oExcel:AddRow(cPlanilha,cTabela, aDados,aCor)
+	
+	Next nX
+	
+	//Cria a Planilha em XML no formato Excel
+	oExcel:Activate()
+	
+	If !Empty(cPasta)
+		
+		//Verifica se o Excel esta instalado
+		If !ApOleClient("MSExcel")
+			MsgAlert("Microsoft Excel não instalado!","Atenção")
+		Else
+			//Salva o Excel em arquivo
+			oExcel:GetXMLFile(cPasta + cArq+".XML")
+			//Abre o Excel
+			oEx:=MsExcel():New()
+			//Abre o Arquivo
+			oEx:WorkBooks:Open(cPasta + cArq+".XML")
+			//Apresenta em Tela
+			oEx:SetVisible(.T.)
+		
+		Endif
+	
+	Endif
+
+
+Return
+
+//*********************************************************************************************************
+
+//*********************************************************************************************************
+
+static Function GetSx3Desc(cCampo)
+Local cTitulo := ''
+Local aArea := GetArea()
+
+  dbSelectArea('SX3')
+  SX3->(dbSetOrder(2))
+
+  If SX3->(dbSeek( cCampo ) )
+    cTitulo := X3Titulo()
+  endif
+
+  RestArea(aArea)
+
+Return cTitulo
+
+//*********************************************************************************************************
+
+//*********************************************************************************************************
+
+Static Function fValDif(a1,a2,a3)
+Local nX  := 1
+Local X1  := X2 := X3 := 0
+Local nRet := 0
+
+Default a1 := 0
+Default a2 := 0
+Default a3 := 99999999999
+
+  for nX := 1 to 3
+    if &("a" + Str(nX,1) )  < 0
+      &("X" + Str(nX,1) ) := &("a" + Str(nX,1) )  * (-1)
+    else 
+      &("X" + Str(nX,1) ) := &("a" + Str(nX,1) ) 
+    endif
+  Next nX
+  
+  For nX := 1 to 3
+    if nX == 1
+      nRet := &("A" + Str(nX,1) )
+      nCont :=&("X" + Str(nX,1) )
+    EndIf
+
+    if &("X" + Str(nX,1) ) < nCont
+      nRet := &("a" + Str(nX,1) )
+    endif
+  
+  Next nX
+
+Return nRet

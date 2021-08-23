@@ -1,0 +1,305 @@
+#include "totvs.ch"
+#include "topconn.ch"
+#include "fileio.ch"
+
+/* detalhamento de aPIN
+1 XCODEX	11 VAL MERC	21 VAL IPI	31 HORA CAN		41 VAL CSLL
+2 TABELA	12 DINHEIRO	22 VAL ISS	32 VLR DEBITO	42 LJ ORI
+3 DOCUMENTO	13 CHEQUE	23 EMISSAO 	33 SITUA		43 CNPJOR
+4 SERIE		14 CARTAO	24 NUMCFI  	34 CPF CLIENTE	44 SERPDV
+5 VLR TOT	15 CONVEN	25 VENDTEF	35 KEY NFCE/SAT	45 PIN_CHVORI
+6 DESCONTO	16 VALES 	26 DATATEF 	36 SERSAT    	46 CX ORI
+7 VLR LIQ	17 FINANC	27 HORATEF	37 B ICMS RET	
+8 PDV		18 OUTROS	28 DOCTEF  	38 ICMS RET	
+9 EMISNF  	19 ENTRADA	29 AUTORIZ	39 VAL PIS	
+10 VAL BRU	20 VAL ICM	30 DOCCAN  	40 VAL COF	
+
+*/
+//------------------------------------------------------------
+// Função fwImpSales                        | Data: 09.03.2019
+// Autor: Eduardo Pessoa
+// Descrição: Faz a importação de vendas paras as tabelas 
+// PIN,PIO, PIP, preparando para o motor do protheus
+//------------------------------------------------------------
+User Function fwImpSales()
+Local aFiles := {}
+Local cExtFiles := "\*PIN.TXT" //ARQUIVO TXT
+Local nX := 0
+//Private cPath  := "c:\rvacari\bl\vendas\IMPORT"
+                                                                                                          
+Private cPath  := "\\172.28.8.117\SSNP9K_pr_PRD_data\Outsourcing\Clientes\SSNP9K_PRD\Protheus_data\IMPORT"
+Private cErrorMessage := ""
+//Private cPath  := "\\172.28.8.245\SSNP9K_pr_TST_data\Outsourcing\Clientes\SSNP9K_TST\Protheus_Data\IMPORT" --Ambiente teste
+Private oFile 
+Private cFileName := ""
+
+If IsRunning(FunName())
+    //Conout(cErrorMessage)
+    Return
+EndIf
+                
+aFiles := Directory(cPath+cExtFiles, "D")
+
+For nX := 1 to Len(aFiles)
+    // Tratamento dos arquivos
+    oFile := FWFileReader():New(cPath+"\"+aFiles[nX,1])
+    cFileName := aFiles[nX,1]
+    AddPin(oFile)
+Next nX
+
+chkfile('PIN')
+
+
+Return(.T.)
+
+//------------------------------------------------------------
+// Função AddError                          | Data: 09.03.2019
+// Autor: Eduardo Pessoa
+// Descrição: Trata a inclusão de mensagem de erro
+//------------------------------------------------------------
+Static Function AddError(cErrorText)
+If !Empty(cErrorMessage)
+    cErrorMessage += CHR(13)+CHR(10)
+EndIf    
+cErrorMessage := CErrorText+"-|"+Date()+"-"+Time()
+Return
+
+//------------------------------------------------------------
+// Função IsRunning                         | Data: 09.03.2019
+// Autor: Eduardo Pessoa
+// Descrição: Verifica se a rotina está sendo executada
+//------------------------------------------------------------
+Static Function IsRunning(cFunction)
+Local aInfo := GetUserInfoArray()
+Local nIndex := 0
+Local lRet := .F.
+
+For nIndex := 1 to Len(aInfo)
+    If aInfo[nIndex,5] == cFunction
+        lRet := .T.
+        If !Empty(cErrorMessage)
+            cErrorMessage += Chr(10)+Chr(13)
+        EndIf    
+        AddError("Função já está em execução, será executado no próximo looping do job.")
+    EndIf
+Next        
+Return(lRet)
+
+//------------------------------------------------------------
+// Função AddPIN                            | Data: 09.03.2019
+// Autor: Eduardo Pessoa
+// Descrição: Inclui registro na tabela PIN
+//------------------------------------------------------------
+Static Function AddPIN(oFile)
+Local aPIN := {}
+Local cLinha := ""
+Local lSuccess := .T.
+Local nReccab := 24737731 //buscara o recno do registro.
+Local _Cteste := RetCodUsr()
+
+
+
+if (oFile:Open())
+   while (oFile:hasLine())
+   	cLinha := oFile:GetLine()
+        aPIN := StrTokArr(cLinha,"|")
+        //If aPIN[2] == "PIN"
+            //If ChkCodex(aPIN[1])
+                // Gravar a PIN
+                // Verifica filial e seta environment tipo
+                //cFilImp := Val(aPIN[47]) //RetFil(aPIN[47])
+
+        //nReccab := Soma1(PIN->(LASTREC()))
+
+                //If !Empty(cFilImp)
+                    //PREPARE ENVIRONMENT EMPRESA '01' FILIAL cFilImp;
+                    dbSelectArea("PIN")
+                    RecLock("PIN",.T.)
+                        PIN->PIN_FILIAL := aPIN[47] //""    //cFilImp
+                        PIN->PIN_NUM	:= STRZERO(VAL(aPIN[3]),6)
+                        PIN->PIN_VEND	:= "000001"
+                        PIN->PIN_CLIENT	:= "000001"	
+                        PIN->PIN_LOJA	:= "01"  //Left(aPIN[8],4)
+                        PIN->PIN_TIPOCL	:= "F"
+                        PIN->PIN_VLRTOT	:= Val(aPIN[10])
+                        PIN->PIN_VLRLIQ	:= Val(aPIN[11])
+                        PIN->PIN_DOC	:= STRZERO(VAL(aPIN[3]),9)
+                        PIN->PIN_EMISNF	:= STOD(aPIN[9])
+                        PIN->PIN_PDV	:= RIGHT(UPPER(aPIN[8]),6)
+                        PIN->PIN_VALBRU	:= Val(aPIN[10])	
+                        PIN->PIN_VALMER	:= Val(aPIN[11])
+                        PIN->PIN_TIPO	:= "V"
+                        PIN->PIN_OPERAD	:= "001"
+                        PIN->PIN_DINHEI	:= IIF(Val(aPIN[12]) > 0, Val(aPIN[19]), 0)
+                        PIN->PIN_CARTAO	:= Val(aPIN[14])
+                        PIN->PIN_ENTRAD	:= Val(aPIN[19])
+                        PIN->PIN_PARCEL	:= 1
+                        PIN->PIN_CONDPG	:= "CN"
+                        PIN->PIN_COND   := 1
+                        PIN->PIN_EMISSA	:= STOD(aPIN[9])
+                        PIN->PIN_NUMCFI	:= IIF(aPIN[24]=="\N","",aPIN[24])
+                        PIN->PIN_VENDTE	:= IIF(Val(aPIN[12]) > 0, "N", "S")
+                                            
+                        If PIN->PIN_VENDTE == "S"
+                            PIN->PIN_DATATE	:=	aPIN[9]
+                        EndIf
+                                            
+                        PIN->PIN_HORATE	:= IIF(Val(aPIN[12])>0, "",IIF(aPIN[27]=="\N","",aPIN[27])) 
+                        PIN->PIN_NSUTEF	:= IIF(aPIN[28]=="\N","00000",aPIN[28])
+                        PIN->PIN_SITUA	:= "RX"
+                        PIN->PIN_CGCCLI	:= IIF(aPIN[34]=="\N","",aPIN[34])
+                        PIN->PIN_ESTACA	:= "001"    
+                        PIN->PIN_KEYNFC	:= aPIN[35]
+                        PIN->PIN_SERSAT	:= IIF(aPIN[36]=="\N","",APIN[36])	
+                        PIN->PIN_ESPECI := ""       //Iif(!EMPTY(APIN[36]), "SATCE", "")
+                        PIN->PIN_SERIE	:= IIF(aPIN[4]=="\N","",STRZERO(VAL(aPIN[4]),3))  //IIF(TRC->ZTQ_TPPDV == "1",SUBSTR(TRC->ZTQ_CHAVE,23,3), "")			
+                        PIN->PIN_DESCON	:= Val(aPIN[6])
+                        PIN->PIN_BRICMS	:= Val(aPIN[10])
+                        PIN->PIN_VALICM	:= Val(aPIN[20])
+                        PIN->PIN_VALPIS	:= Val(aPIN[37])
+                        PIN->PIN_VALCOF	:= Val(aPIN[38])
+                        PIN->PIN_TPORC	:= "D" 
+                        PIN->PIN_XTPREG	:= "5"
+                        PIN->PIN_DATIMP	:= Date() 
+                        PIN->PIN_DATEXP	:= Date()
+                        PIN->PIN_CODORI	:= "2"
+                        PIN->PIN_CODDES	:= "1"
+                        PIN->PIN_ACAO	:= "1"
+                        PIN->PIN_STAIMP	:= "8"   // em processo de importa��o
+                        PIN->PIN_PROTHE	:= "PIN_FILIAL+PIN_NUM+PIN_PDV"
+                        PIN->PIN_LJORI	:= SUBSTR(alltrim(aPIN[8]),3,4)  //CVALTOCHAR(VAL(SUBSTR(aPIN[8],3,4)))				
+                        PIN->PIN_CXOR	:= SUBSTR(alltrim(aPIN[8]),7,2)  //aPIN[46]		
+                        
+                        PIN->PIN_LOGINT := ""
+                        PIN->PIN_XCPFV	:= ""
+                        PIN->PIN_XCPFC	:= ""
+						PIN->PIN_XCNPJF	:= ""
+						PIN->PIN_STORC	:= ""
+						PIN->PIN_DESCNF	:= 0
+						PIN->PIN_TXDESC	:= 0
+						PIN->PIN_CONFVE	:= ""
+						PIN->PIN_TEFSTA	:= ""
+						PIN->PIN_ADMFIN	:= ""
+						PIN->PIN_MOEDA	:= 0
+						PIN->PIN_ENDCOB	:= ""
+						PIN->PIN_ENDENT	:= ""
+						PIN->PIN_BAIRRC	:= ""
+						PIN->PIN_CEPC	:= ""
+						PIN->PIN_MUNC	:= ""
+						PIN->PIN_ESTC	:= ""
+						PIN->PIN_BAIRRE	:= ""
+						PIN->PIN_CEPE	:= ""
+						PIN->PIN_MUNE	:= ""
+						PIN->PIN_ESTE	:= ""
+						PIN->PIN_SEGURO	:= 0
+						PIN->PIN_TROCO1	:= 0
+						PIN->PIN_CONTRA	:= ""
+						PIN->PIN_STAIMP	:= "9"
+						PIN->PIN_RECCAB  := nReccab //PIN->(Recno())
+                        PIN->PIN_CNPJOR	:= STRTRAN(aPIN[43],"/","")
+                        PIN->PIN_CHVORI	:= aPIN[45]   //Orcamento:Filial + SUBSTR( Orcamento:ChaveNFCe,7,14) + ALLTRIM( Orcamento:NotaFiscal ) + DTOS(DATE()) + SUBSTR(TIME(),1,2)  
+                        PIN->PIN_XCODEX	:= aPIN[1]
+                    MSUnlock()
+                //EndIf
+
+            //Else
+            //    AddError("Codex já existe, registro não importado.")
+            //EndIf
+        //Else
+        //    AddError("Registro não é da tabela PIN.")    
+        //EndIf  
+        nReccab++
+
+   end
+   oFile:Close()
+   // Verifica se correu tudo bem
+   If lSuccess
+   		__CopyFile(cPath+cFilename,cPath+"\PROCESSED\"+cFileName)
+   		FERASE(cPath+cFilename)
+   Else
+		__CopyFile(cPath+cFilename,cPath+"\ERROR\"+cFileName)
+		FERASE(cPath+cFilename)
+   Endif
+   // Verifica se as outras tabelas foram gravadas
+   
+EndIf
+Return()
+
+//------------------------------------------------------------
+// Função ChkCodex                          | Data: 09.03.2019
+// Autor: Eduardo Pessoa
+// Descrição: Verifica se existe o Codex na PIN
+//------------------------------------------------------------
+Static Function ChkCodex(cCodex)
+Local cQuery := ""
+Local lRet := .T.
+
+cQuery := "SELECT * FROM "+RetSQLName("PIN")+" WHERE D_E_L_E_T_='' AND PIN_XCODEX='"+Alltrim(cCodex)+"'"
+
+If Select("IMPPIN")<>0
+    IMPPIN->(dbCloseArea())
+EndIf    
+
+TCQuery cQuery New Alias "IMPPIN"
+
+If !IMPPIN->(Eof())
+    lRet := .F.
+EndIf    
+
+Return(lRet)
+
+//------------------------------------------------------------
+// Função RetFil                            | Data: 09.03.2019
+// Autor: Eduardo Pessoa
+// Descrição: Retorna a Filial da informação importada
+//------------------------------------------------------------
+Static Function RetFil(cCnpjOri)
+Local CCnpj := STRTRAN(cCnpjOri,"/","")
+Local aSM0  := FWLoadSM0()
+Local nI    := 0
+Local cRet  := ""
+
+For nI := 1 to Len(aSM0)
+    IIF(aSM0[nI,18]==CCnpj,cRet:=aSM0[nI,2],)
+Next nI
+
+If Empty(cRet)
+    AddError("Filial não encontrada.")
+EndIf
+
+Return(cRet)
+
+//------------------------------------------------------------
+// Função GetPIOInfo                      | Data: 09.03.2019
+// Autor: Eduardo Pessoa
+// Descrição: Busca dados na PIO, via xCodex
+//------------------------------------------------------------
+/*
+1 - xCodex  4 - CHVORI   7 - RECCAB
+2 - LJORI   5 - SITUA
+3 - CNPJOR  6 - PDV
+
+Static Function GetPIOInfo(cXCodex)
+Local cQueryPIO := ""
+Local aRet := {}
+
+cQueryPIN := " SELECT PIN_XCODEX,PIN_LJORI,PIN_CNPJOR,PIN_CHVORI,PIN_SITUA,PIN_PDV,PIN_RECCAB "
+cQueryPIN += " FROM "+RetSQLName("PIN")+" WHERE D_E_L_E_T_='' AND PIN_XCODEX='"+Alltrim(cXCodex)+"'"
+
+If Select("INFOPIN")<>0
+    INFOPIN->(dbCloseArea())
+EndIf    
+
+TCQuery cQueryPIN New Alias "INFOPIN"
+
+If !INFOPIN->(Eof())
+    Aadd(aRet,{INFOPIN->PIN_XCODEX})  //1
+    Aadd(aRet,{INFOPIN->PIN_LJORI})   //2
+    Aadd(aRet,{INFOPIN->PIN_CNPJOR})  //3
+    Aadd(aRet,{INFOPIN->PIN_CHVORI})  //4
+    Aadd(aRet,{INFOPIN->PIN_SITUA})   //5
+    Aadd(aRet,{INFOPIN->PIN_PDV})     //6
+    Aadd(aRet,{INFOPIN->PIN_RECCAB})  //7
+EndIf    
+
+Return(aRet)*/

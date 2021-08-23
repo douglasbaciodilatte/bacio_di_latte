@@ -1,0 +1,99 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"type": "totvs_language_debug",
+			"request": "launch",
+			"name": "TOTVS - Bacio",
+			"program": "${command:AskForProgramName}",
+			"cwb": "${workspaceFolder}",
+			"smartclientBin": "C:\\TOTVS\\Clientes\\Bacio\\SmartClients\\Produção\\smartclient.exe",
+			"isMultiSession": true,
+			"enableTableSync": true
+		}
+	],
+	"lastPrograms": [
+		{
+			"args": [],
+			"label": "SIGAADV",
+			"description": ""
+		},
+		{
+			"args": [],
+			"label": "U_BDWFFAT1",
+			"description": ""
+		},
+		{
+			"args": [],
+			"label": "U_BDWFFAT2",
+			"description": ""
+		},
+		{
+			"args": [],
+			"label": "SIGAMDI",
+			"description": ""
+		},
+		{
+			"args": [
+				"(\"",
+				"01",
+				"\",\"",
+				"0001",
+				"\")"
+			],
+			"label": "U_JOBZZ6",
+			"description": "(\" 01 \",\" 0001 \")"
+		},
+		{
+			"args": [
+				" (\" ",
+				"01",
+				" \",\" ",
+				"0001",
+				" \")"
+			],
+			"label": "U_JOBZZ6",
+			"description": " (\"  01  \",\"  0001  \")"
+		},
+		{
+			"args": [
+				"(\"",
+				"0001",
+				"\")"
+			],
+			"label": "U_JOBZZ6",
+			"description": "(\" 0001 \")"
+		},
+		{
+			"args": [
+				"('",
+				"0001",
+				"')"
+			],
+			"label": "U_JOBZZ6",
+			"description": "(' 0001 ')"
+		},
+		{
+			"args": [
+				"1"
+			],
+			"label": "U_JOBZZ6",
+			"description": "1"
+		},
+		{
+			"args": [
+				"_xFilial",
+				" := \"",
+				"0001",
+				"\")"
+			],
+			"label": "U_JOBZZ6",
+			"description": "_xFilial  := \" 0001 \")"
+		},
+		{
+			"label": "SIGAMDI",
+			"description": "<nil>"
+		}
+	],
+	"lastProgramExecuted": "SIGAMDI"
+}

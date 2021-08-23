@@ -1,0 +1,56 @@
+User Function BLVLDNNT()
+
+Local oModel := FwModelActive()
+Local nOperation:= oModel:GetOperation()
+Local xStatus
+Local lRetorno:=.T.
+
+If cFilant $ "0072,0031"
+	
+	If nOperation == 3 //Inclusão
+		
+		//Reclock("NNS",.F.)
+		M->NNS_STAREF:='1'
+		xStatus:=M->NNS_STAREF
+		//Msunlock()
+		
+	Elseif nOperation == 4 //Alteraçao
+		/*
+		If Empty(NNS_STAREF)
+		Reclock("NNS",.F.)
+		NNS->NNS_STAREF:='U'
+		xStatus:=NNS->NNS_STAREF
+		Msunlock()
+		
+		U_XMLREFR(xStatus)
+		
+		Else
+		*/
+		MsgAlert("Essa solicitação de Transferência já foi enviada para separação e não será possível sua alteração","Atenção")
+		
+		lRetorno:=.F.
+		
+		Return lRetorno
+		
+		//Endif
+	ElseIf nOperation == 5  //Exclusão
+		/*
+		Reclock("NNS",.F.)
+		NNS->NNS_STAREF:='D'
+		xStatus:=NNS->NNS_STAREF
+		Msunlock()
+		
+		U_XMLREFR(xStatus)
+		*/
+		
+		MsgAlert("Essa solicitação de Transferência já foi enviada para separação e não será possível sua exclusao","Atenção")
+		
+		lRetorno:=.F.
+		
+		Return lRetorno
+		
+	Endif
+
+Endif
+
+Return lRetorno

@@ -1,0 +1,3 @@
+$theme-colors: ( "primary": #5E3512 );
+
+@import "C:/Users/zbook/source/repos/bacioInventario/ClientApp/node_modules/bootstrap/scss/bootstrap";

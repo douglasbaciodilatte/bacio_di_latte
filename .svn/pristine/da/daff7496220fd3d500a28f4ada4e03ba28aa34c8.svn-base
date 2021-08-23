@@ -1,0 +1,261 @@
+#INCLUDE "TOTVS.CH"
+#INCLUDE "PROTHEUS.CH"
+#INCLUDE "TOPCONN.CH"
+#INCLUDE "TBICONN.CH"
+/*
+#01 Criar um rotina JOB e efetuar leitura dos dados tabela ZZ6
+
+Static cAssunto := "teste"
+Static cMsg     := "Teste"
+Static cEmail   := "reinaldo.rabelo@ravcari.com.br"
+
+/*
+User Function JOBPROD()
+	
+    Local lret1 := .F.
+    Default _cEmp	:= "01"
+    Default _cFil	:= "0001"
+    
+    RpcSetEnv(_cEmp,_cFil)
+    
+    for nx:=1 to 5
+        lret1 := Startjob("U_JOBZZ6",Getenvserver(),.T.,"Inicio: " + cvaltochar(date()) +"-"+ time())
+    
+    next nx
+    cDetalhe := "depois "   
+    u_EnviaEmail(cAssunto,cDetalhe,cEmail,cAnexo)
+    If !lret1
+        Return -1
+    Endif
+   //RpcClearEnv()
+Return
+*/
+User Function JOBZZ6()
+
+Local _cJob			:= ""
+Local _oLocker
+Local nX := 1
+
+Default _cEmp	:= "01"
+Default _cFil	:= "0001"
+
+
+    For n := 5 To 1
+        
+        _cFil	:= STRZERO(n,4)
+        
+        //tratamento para filiais que não existe
+        If ! _cFil $ "0010|0141"
+        
+            RpcSetType(3)
+            PREPARE ENVIRONMENT EMPRESA "01" FILIAL _cFil MODULO "EST"
+
+            Conout("Inicio do Processamento Data " + DTOC( DATE() ) + " Hora " + Time())
+
+        
+            //ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+            //³Verifica se o JOB ja esta executando.³
+            //ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+            _cJob := "JOBZZ6"
+            _oLocker := LJCGlobalLocker():New()
+
+            If !_oLocker:GetLock( _cJob )
+                Conout(" * * " + DtoC(dDataBase) + " " + Time() + " - <<< " + _cJob + " >>> Processo ja esta em execucao.")
+                //RpcClearEnv()
+                Return
+            EndIf
+
+            dbSelectArea('SC2')
+
+            //SELECT para filtrar os dados
+            //_cAlias		:= GetNextAlias()
+            dbSelectArea("ZZ6")
+            ZZ6->(DbSetOrder(1))
+            ZZ6->(DbGoTop())
+            ZZ6->(dbSeek(_cFil))
+
+            While ZZ6->(!EOF() .And. ZZ6->ZZ6_FILIAL == _cFil) //.and. nX < 3
+                            
+                RpcSetEnv("01", ZZ6->ZZ6_FILIAL) //Abro o ambiente, pois o mesmo não encontrava-se aberto
+
+                SB1->(dbSelectArea('SB1'))
+                SB1->(dbSeek(xFilial("SB1") + ZZ6->ZZ6_PROD))
+
+                If SB1->B1_MSBLQL != "1"
+
+                    if ZZ6->ZZ6_TIPO == 'P' .And. empty(ZZ6->ZZ6_OPERP)
+                        //_cNumOP := GerOP()
+                        //AponOP(_cNumOP)
+                    EndIf
+                    
+                    if ZZ6->ZZ6_TIPO == 'C' .And. empty(ZZ6->ZZ6_OPERP)
+                        OPConsumo()
+                    Endif
+                    
+                EndIf
+
+                nX++
+                ZZ6->(DbSkip())
+            Enddo
+        EndIf
+        Reset Environment
+
+    next n
+
+    //l global para uma nova execucao
+    _oLocker:ReleaseLock( _cJob )
+    
+    //Limpa o Ambiente
+    //RpcClearEnv()
+
+Return
+/*
+#02 Analisar Filial + Local (Armazém) + Produto + Quantidade na Primeira Unidade, realizar o apontomento de produção, 
+    Rotina ExecAuto - 
+    Mata650 inclusão de OP Gerar SC2 
+    Mata250 Apontamento de Produção SD3
+*/
+Static Function GerOP()
+
+Local aMATA650 := {}       //-Array com os campos
+Local nOpc     := 3
+Local cDetalhe := ""
+
+Private lMsErroAuto   := .F.
+Private lMsHelpAuto   := .F.
+Private lAutoErrNoFile:= .T. 
+
+Private _cNumOP := GetNumSc2()
+    
+    aMata650  := {  {'C2_FILIAL'   ,ZZ6->ZZ6_FILIAL         ,NIL},;
+                    {'C2_NUM'      ,_cNumOP                 ,NIL},;
+                    {'C2_ITEM'     ,"01"                    ,NIL},;          
+                    {'C2_SEQUEN'   ,"001"                    ,NIL},;
+                    {'C2_PRODUTO'  ,ZZ6->ZZ6_PROD           ,NIL},; 
+                    {'C2_QUANT'    ,ZZ6->ZZ6_QUANT          ,NIL}}
+               
+                                                          
+    ConOut("Inicio  : "+Time())
+    
+    //ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+    //³ Se alteracao ou exclusao, deve-se posicionar no registro     ³
+    //³ da SC2 antes de executar a rotina automatica                 ³
+    //ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+    
+    SC2->(DbSetOrder(1)) // FILIAL + NUM + ITEM + SEQUEN + ITEMGRD
+    IF !SC2->(DbSeek(xFilial("SC2")+ _cNumOP + "01"+"001"))
+
+        //Troco database para criação OP
+        dDataBAse 	:= ZZ6->ZZ6_DATA
+
+            msExecAuto({|x,Y| Mata650(x,Y)},aMata650,nOpc)
+       
+       dDataBAse := DATE()
+
+        If lMsErroAuto
+            cLog:= "Erro na operação : " + CRLF
+            aEval(GetAutoGrLog(), {|x| cDetalhe+= x + CRLF })
+            lRet:= .F.
+        Else           
+            RecLock('ZZ6',.F.)
+                ZZ6->ZZ6_OPERP := cValToChar(SC2->(RECNO()))
+            ZZ6->(MsUnLock())
+
+            //Altera código do armazém e centro de custo, rotina padrão não deixou criar certo
+            RecLock('SC2',.F.)
+                SC2->C2_LOCAL := ZZ6->ZZ6_LOCAL
+                SC2->C2_CC    := ZZ6->ZZ6_LOCAL
+                SC2->C2_PRIOR := "500"
+            SC2->(MsUnLock())
+
+        Endif
+
+    EndIF
+    
+ConOut("Fim  : "+Time())
+ 
+ 
+return(_cNumOP)
+
+//------------------------------------------------------------
+
+Static Function AponOP(_cNumOP)
+Local aVetor := {}         
+Local dData
+Local nOpc   := 3 //-Opção de execução da rotina, informado nos parametros quais as opções possiveisl
+Local cDetalhe:= ""
+
+Private lMsErroAuto   := .F.
+Private lMsHelpAuto   := .F.
+Private lAutoErrNoFile:= .T.        
+ 
+    dData:=dDataBase
+    aVetor := {; 
+                {"D3_TM"     ,"100"                  ,NIL},;
+                {"D3_OP"     ,_cNumOP     + "01001"  ,NIL},;
+                {"D3_LOCAL"  ,ZZ6->ZZ6_LOCAL         ,NIL},;
+                {"D3_CC"     ,ZZ6->ZZ6_LOCAL         ,NIL} ;
+            }                                      
+    //Troco database para criação OP
+    dDataBAse 	:= ZZ6->ZZ6_DATA
+        MSExecAuto({|x, y| mata250(x, y)},aVetor, nOpc ) 
+    dDataBAse 	:= DATE() 
+
+    If lMsErroAuto
+       cLog:= "Erro na operação : " + CRLF
+       aEval(GetAutoGrLog(), {|x| cDetalhe+= x + CRLF })
+       lRet:= .F.
+    Else     
+        RecLock('ZZ6',.F.)
+            ZZ6->ZZ6_OPERP := "A" + ALLTRIM(ZZ6->ZZ6_OPERP)
+        ZZ6->(MsUnLock())
+    Endif
+    
+return
+
+/*
+#05 Mesmo JOB analisando a tabela ZZ6 Terá os dados de Consumo, para essa linha executar rotina: Mata240
+*/
+Static Function OPConsumo()
+Local aItem := {}
+Local nOpc   := 3 //-Opção de execução da rotina, informado nos parametros quais as opções possiveisl
+Private lMsErroAuto   := .F.
+Private lMsHelpAuto   := .F.
+Private lAutoErrNoFile:= .T. 
+
+aItem := {  {"D3_FILIAL" , ZZ6->ZZ6_FILIAL  ,NIL},;
+            {"D3_TM"     , "502"            ,NIL},;
+            {"D3_COD"    , ZZ6->ZZ6_PROD    ,NIL},;//{"D3_UM"     ,""         ,NIL},;
+            {"D3_QUANT"  , ZZ6->ZZ6_QUANT   ,NIL},;
+            {"D3_LOCAL"  , ZZ6->ZZ6_LOCAL   ,NIL},;//
+            {"D3_CC"     , ZZ6->ZZ6_LOCAL   ,NIL},;
+            {"D3_DOC"    , ZZ6->ZZ6_OP      ,NIL},;
+            {"D3_EMISSAO", ZZ6->ZZ6_DATA    ,NIL}}/*
+            {"D3_NUMSEQ" ,"000017"   ,NIL},;
+            {"D3_LOCALIZ","RUA 002 " ,NIL},;
+            {"D3_LOTECTL","1012 "    ,NIL},;
+            {"D3_DTVALID",dDatav     ,NIL}}
+            */
+    //Troco database para criação OP
+    dDataBAse 	:= ZZ6->ZZ6_DATA        
+        MSExecAuto({|x,y| mata240(x,y)},aItem,nOpc)
+    dDataBAse 	:= DATE() 
+
+    If lMsErroAuto
+             
+    Else
+        RecLock('ZZ6',.F.)
+            ZZ6->ZZ6_OPERP := cValToChar(SD3->(RECNO()))
+        ZZ6->(MsUnLock())
+    Endif
+    
+
+Return
+/*
+#02 Analisar Filial + Local (Armazém) + Produto + Quantidade na Primeira Unidade, realizar o apontomento de produção, Rotina ExecAuto - Mata650 inclusão de OP Gerar SC2 e Mata250 Apontamento de Produção SD3
+#03 Enviar E-Mail de erro quando não conseguir apontar produção Protheus
+#04 Enviar Error ExecAuto por e-mail
+#05 Mesmo JOB analisando a tabela ZZ6 Terá os dados de Consumo, para essa linha executar rotina: Mata240
+*/
+/////M410lDel VALIDA A EXCLUSÃO DA MLINHA DO PEDIDO DE VENDA
+//M410STTS

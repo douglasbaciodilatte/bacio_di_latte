@@ -1,0 +1,344 @@
+#Include "TOTVS.ch"
+#Include "FWMVCDEF.ch"
+#include "topconn.ch"
+#include "tbiconn.ch"
+#INCLUDE 'RWMAKE.CH'
+#INCLUDE "XMLXFUN.CH"
+
+
+User Function XMLREFR(cNum)
+
+Local cXml    := ''
+Local cXml2   := ''
+Local cFil    := ''
+Local cSolict := ''
+Local cQuery  := ''
+Local cResult := ''
+Local lAux    := .T.
+Local nItem   := 0
+Local xCodReq:=""
+Local xDestino:="00037"
+Local xCNPJ_REQ:=""
+Local xCNPJ_DEST:="49.363.468/0005-63"
+Local lCab:=.T.
+Local CCGCENT:=""
+Local xEsp:="LOTE"
+Local cStatus:=""
+Local cMailConta  := Alltrim(SuperGETMV("MV_RELACNT") )
+Local cMailServer := Alltrim(SuperGETMV("MV_RELSERV"))
+Local cMailSenha  := Alltrim(SuperGETMV("MV_RELPSW"))
+Local cRelto 	  := AllTrim(GETMV("MV_XREFEML"))
+Local cMens   	  := "Envio de Solicitacao de Transferencia para a Refrio"
+Local cBodyMsg	  :=""
+Local cRelFrom	  :=""
+Local xStatus
+Local xProd		  :=''
+Local xQuant	  :=0
+Local xLoctCt	  :=''
+Local lPed        :=.F.
+Local xCli		  :=''
+Local xLojCli	  :=''
+Local xFilDes
+Local cEmpInt   := SuperGetMv("MV_XEMPREF",.F.,"0031,0072,0136")
+
+
+//Filiais que estão usando o envio dos arquivos
+//0031 - CNPJ 11950487003105 - CÓDIGO REFRIO 00040
+//0072 - CNPJ 11950487007283 - CÓDIGO REFRIO 00043
+//0136 - FALTA DEFINIR
+
+If !cFilant $ cEmpInt
+	
+	MsgAlert("Filial não contida no parâmetro da Integração com a Refrio, MV_XEMPREF - 0031, 0072, 0136","Ätencao")
+	
+	Return
+	
+Endif
+
+
+If Val(Substr(Time(),1,2)) > 24
+	
+	MsgAlert("Não é permitido o envio após as 11:59","Ätencao")
+	
+	Return
+	
+Endif
+
+If cNum=="NNS"
+	cSolict := NNS->NNS_COD
+	cFil    := NNS->NNS_FILIAL
+Endif
+
+
+If Funname()=="MATA311"
+	cQuery := CRLF + " SELECT NNS_COD, NNS_DATA,NNS_SOLICT,NNS_XNOMSO,NNS_STATUS, NNS_STAREF,NNT_PROD,NNT_UM,NNT_LOCAL,NNT_QUANT,NNT_FILDES,NNT_LOCLD,NNT_XDATA,NNT_LOTECT, NNT_XHORA,NNT_QTSEG FROM "+RetSqlName('NNS')+" NNS "
+	cQuery += CRLF + " INNER JOIN "+RetSqlName('NNT')+" NNT ON NNT_COD=NNS_COD AND NNT_FILIAL=NNS_FILIAL AND NNT.D_E_L_E_T_='' "
+	cQuery += CRLF + " WHERE NNS.D_E_L_E_T_='' AND NNS_COD='"+cSolict+"' AND NNS_STAREF='1' AND NNS_FILIAL='"+cFil+"' "
+Else
+	lPed:=.T.
+	
+	cMens:= "Envio de Pedido de Vendas para a Refrio"
+	
+	cQuery := CRLF + " SELECT C5_FILIAL, C5_CLIENTE, C5_LOJACLI, C5_EMISSAO, C5_XHORA, C5_NUM, C5_STAREF, C6_FILIAL, C6_CLI, C6_LOJA, C6_NUM, C6_ITEM, C6_PRODUTO, C6_QTDVEN, C6_LOTECTL FROM "+RetSqlName('SC5')+" SC5 "
+	cQuery += CRLF + " INNER JOIN "+RetSqlName('SC6')+" SC6 ON SC5.C5_FILIAL=SC6.C6_FILIAL AND SC5.C5_NUM=SC6.C6_NUM AND SC5.C5_CLIENTE=SC6.C6_CLI AND SC5.C5_LOJACLI=SC6.C6_LOJA "
+	cQuery += CRLF + " WHERE SC5.D_E_L_E_T_='' AND SC6.D_E_L_E_T_='' AND SC5.C5_NUM='"+cNum+"' AND SC5.C5_STAREF='1' AND SC5.C5_FILIAL='"+cFilAnt+"'"
+Endif
+
+If Select("TMP") <> 0
+	DbSelectArea("TMP")
+	DbCloseArea()
+EndIf
+
+DbUseArea(.T.,"TOPCONN",TCGENQRY(,,cQuery),'TMP',.F.,.T.)
+
+OpenSM0()
+SM0->(DBGOTOP())
+
+xStatus:='I'
+
+If !lPed
+	
+	xFilDes:=TMP->NNT_FILDES
+	
+	If Empty(xFilDes)
+		
+		MsgAlert("Não existe informação referente a essa solicitação para ser enviada, por favor verifique se a mesma já não foi enviada ou separada","Ätencao")
+		
+		Return
+	Endif
+Else
+	
+	xFilDes:=TMP->C5_FILIAL
+	
+	If Empty(xFilDes)
+		
+		MsgAlert("Não existe informação referente a esse Pedido para ser enviada, por favor verifique se o mesma já não foi enviado ou separado","Ätencao")
+		
+		Return
+	Endif
+	
+Endif
+
+While !SM0->(EOF())
+	If Alltrim(SM0->M0_CODFIL)==Alltrim(xFilDes)
+		cEndDes := Alltrim(SM0->M0_ENDENT)
+		cCidDes := Alltrim(SM0->M0_CIDENT)
+		cUFDes  := Alltrim(SM0->M0_ESTENT)
+		cCepDes := Alltrim(SM0->M0_CEPENT)
+		cBairDes:= Alltrim(SM0->M0_BAIRENT)
+		cCGCDes := Alltrim(SM0->M0_CGC)
+		cCgcEnt := Alltrim(SM0->M0_CGC)
+	ElseIf Alltrim(SM0->M0_CODFIL)==Alltrim(cFilAnt)
+		cCgcEnt := Alltrim(SM0->M0_CGC)
+	EndIf
+	
+	SM0->(DbSkip())
+Enddo
+
+xCNPJ_REQ:=TRANSFORM(cCgcEnt, "@R 99.999.999/9999-99")
+
+While TMP->(!EOF())
+	If lAux
+		If !lPed
+			cDate := DToC(SToD(TMP->NNT_XDATA))+' '+Alltrim(TMP->NNT_XHORA)
+		Else
+			
+			cDate := DToC(SToD(TMP->C5_EMISSAO))+' '+Alltrim(TMP->C5_XHORA)
+			cSolict:=TMP->C5_NUM
+			
+			
+		Endif
+		
+		cXml := CRLF + "      <PEDIDOS>"
+		cXml += CRLF + "         <PEDIDO>"
+		cXml += CRLF + "            	<doca />"
+		cXml += CRLF + "            	<cnpjProprietario>"+xCNPJ_REQ+"</cnpjProprietario>"
+		cXml += CRLF + "            	<cnpjDestinatario>"+cCGCDes+"</cnpjDestinatario>"
+		cXml += CRLF + "            	<cnpjTransportadora>"+xCNPJ_DEST+"</cnpjTransportadora>"
+		cXml += CRLF + "            	<numeroPedido>"+cSolict+"</numeroPedido>"
+		cXml += CRLF + "            	<tipoCarga>CN</tipoCarga>"
+		cXml += CRLF + "            	<tipoAcondicionamento>PP</tipoAcondicionamento>"
+		cXml += CRLF + "            	<tipoSeparacao>PIC;FEF;PLL</tipoSeparacao>"
+		cXml += CRLF + "            	<tipoSeparacao2>AGL;FEF;PLL</tipoSeparacao2>"
+		cXml += CRLF + "            	<observacao/>"
+		cXml += CRLF + "            	<dataEmissao>"+cDate+"</dataEmissao>"
+		//cXml += CRLF + "          	<numeroPlanejamento>246889</numeroPlanejamento>"
+		//cXml += CRLF + "          	<numeroEmbarque>566</numeroEmbarque>"
+		//cXml += CRLF + "          	<numeroRefPedCliente>4562</numeroRefPedCliente>"
+		//cXml += CRLF + "          	<nroagrupseparacao>246889</nroagrupseparacao>"
+		//cXml += CRLF + "          	<placaVeiculo>DET1456</placaVeiculo>"
+		//cXml += CRLF + "          	<deposito>03</deposito>"
+		cXml += CRLF + "            	<cnpjArmazem>"+xCNPJ_DEST+"</cnpjArmazem>"
+		cXml += CRLF + "            	<numeroLacre />"
+		cXml += CRLF + "            	<indicaLocalEntregaNome>"+cEndDes+"</indicaLocalEntregaNome>"
+		cXml += CRLF + "            	<indicaLocalEntregaBairro>"+cBairDes+"</indicaLocalEntregaBairro>"
+		cXml += CRLF + "            	<indicaLocalEntregaCidade>"+cCidDes+"</indicaLocalEntregaCidade>"
+		cXml += CRLF + "            	<indicaLocalEntregaCep>"+cCepDes+"</indicaLocalEntregaCep>"
+		cXml += CRLF + "            	<indicaLocalEntregaUf>"+cUFDes+"</indicaLocalEntregaUf>"
+		cXml += CRLF + "            	<TpAcao>"+xStatus+"</TpAcao>"
+		//cXml += CRLF + "          	<indicaLocalEntregaTel />"
+		//cXml += CRLF + "          	<atributo1>246889</atributo1>"
+		//cXml += CRLF + "          	<atributo2>1620167</atributo2>"
+		//cXml += CRLF + "          	<atributo3>2</atributo3>"
+	EndIf
+	
+	nItem++
+	
+	If lPed
+		xProd	  :=TMP->C6_PRODUTO
+		xQuant	  :=TMP->C6_QTDVEN
+		xLoctCt	  :=TMP->C6_LOTECTL
+		xCli	  :=TMP->C5_CLIENTE
+		xLojCli	  :=TMP->C5_LOJACLI
+		cSolict   :=TMP->C5_NUM
+		cFil      :=TMP->C5_FILIAL
+		
+		If Empty(xLoctCt)
+			xEsp:=''
+		Endif
+		
+	Else
+		
+		xProd	  := TMP->NNT_PROD
+		xQuant	  := TMP->NNT_QUANT
+		xLoctCt	  := TMP->NNT_LOTECT
+		
+		If Empty(xLoctCt)
+			xEsp:=''
+		Endif
+		
+		
+	Endif
+	
+	cXml += CRLF + "            <ITEM_PEDIDO>"
+	cXml += CRLF + "               	<numeroSequencialItem>"+cValToChar(nItem)+"</numeroSequencialItem>"
+	cXml += CRLF + "               	<codigoProduto>"+Alltrim(xProd)+"</codigoProduto>"
+	cXml += CRLF + "               	<qtdeEmbalagem>"+Alltrim(Iif(ValType(xQuant)=='N',cValToChar(xQuant),xQuant))+"</qtdeEmbalagem>"
+	cXml += CRLF + "               	<quantidadeProduto>"+Alltrim(Iif(ValType(xQuant)=='N',cValToChar(xQuant),xQuant))+"</quantidadeProduto>"
+	//cXml += CRLF + "             	<tipoSeparacao>FEF</tipoSeparacao>"
+	//cXml += CRLF + "             	<valorDetalhe1 />"
+	//cXml += CRLF + "             	<valorDetalhe2 />"
+	//cXml += CRLF + "             	<valorDetalhe3 />"
+	//cXml += CRLF + "             	<valorDetalhe4 />"
+	cXml += CRLF + "               <tipoEspecificacaoItem>"+xEsp+"</tipoEspecificacaoItem>"
+	cXml += CRLF + "               <valorEspecificacaoItem>"+Alltrim(xLoctCt)+"</valorEspecificacaoItem>"
+	//cXml += CRLF + "               <TpAção>"+TMP->NNS_STAREF+"</TpAção>"
+	cXml += CRLF + "            </ITEM_PEDIDO>"
+	
+	lAux := .F.
+	
+	TMP->(DbSkip())
+EndDo
+
+cXml += CRLF + "         </PEDIDO>"
+cXml += CRLF + "      </PEDIDOS>"
+
+
+oWs:=WSWmsSIS():New()
+oWs:oWScabec:CIDENTIFICADOR:= "WEBAPI-I50"
+oWs:oWScabec:CREQUISITANTE:= xCNPJ_REQ
+
+If oWs:SOLWMSConsumoInterfaces(oWs:oWScabec,cXml)
+	cResult := oWs:cSOLWMSConsumoInterfacesResult
+	
+	If !lPed
+		
+		Reclock("NNS",.F.)
+		NNS->NNS_XCDREF:=Substr(cResult,14,7)
+		NNS->NNS_STAREF:="2"
+		MsUnlock()
+		
+	Else
+		
+		DbSelectArea("SC5")
+		DbSetOrder(3)
+		DbSeek(xFilial("SC5")+xCli+xLojCli+cNum)
+		Reclock("SC5",.F.)
+		SC5->C5_XCDREF:=Substr(cResult,14,7)
+		SC5->C5_STAREF:="2"
+		MsUnlock()
+		
+	Endif
+	
+	If !lPed
+		
+		cBodyMsg := "A solicitacao de Transferencia Número: " + Alltrim(cSolict) + " foi enviada para a Refrio" + CHR(13) + CHR(10)
+		cBodyMsg += "O status para essa solicitacao está como Enviado em separação e o número de Identificação na Refrio é: " + Alltrim(NNS->NNS_XCDREF) + CHR(13) + CHR(10)
+	Else
+		cBodyMsg := "O Pedido de vendas Número: " + Alltrim(cSolict) + " foi enviado para a Refrio" + CHR(13) + CHR(10)
+		cBodyMsg += "O status para esse Pedido está como Enviado em separação e o número de Identificação na Refrio é: " + Alltrim(SC5->C5_XCDREF) + CHR(13) + CHR(10)
+		
+	Endif
+	
+	
+	
+	BLSendMail(cMailConta,cMailSenha,cMailServer,cRelFrom,cRelTo,cMens + " " + "",cBodyMsg)
+Else
+	cResult := GetWSCError()
+EndIf
+
+Return
+
+Static Function BLSendMail(cAccount,cPassword,cServer,cFrom,cEmail,cAssunto,cMensagem)
+
+Local cEmailTo 	:= ""
+Local cEmailBcc	:= ""
+Local cEmailTo2 := ""
+Local cEmailTo3 := ""
+Local lResult  	:= .F.
+Local lResult2 	:= .F.
+Local lResult3 	:= .F.
+Local cError   	:= ""
+Local lRet	   	:= .F.
+Local cSenha   	:= cPassword
+Local aAttach  	:= ""
+Local lVenEmail	:= .T.
+Local cConta    := Alltrim(SuperGETMV("MV_RELACNT") )
+Local cServer   := Alltrim(SuperGETMV("MV_RELSERV"))
+Local cSenha    := Alltrim(SuperGETMV("MV_RELPSW"))
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³Envia o mail para a lista selecionada. Envia como BCC para que a pessoa pense³
+//³que somente ela recebeu aquele email, tornando o email mais personalizado.   ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+
+//if empty(cEmail) // EMail de cliente vazío
+//	lVenEmail := TelaEmail(@cMensagem,cAssunto,@aAttach,@cEmail)
+//Endif
+
+//if lVenEmail //(TelaEmail(@cMensagem,cAssunto,@aAttach,@cEmail))
+
+If At(";",cEmail) > 0 // existe um segundo e-mail.
+	cEmailBcc:= SubStr(cEmail,At(";",cEmail)+1,Len(cEmail))
+Endif
+
+cEmailTo:= SubStr(cEmail,1,At(";",cEmail)-1)
+
+lResult := MailSmtpOn( cServer, cConta, cSenha, )
+
+// Se a conexao com o SMPT esta ok
+If lResult
+	
+	lRet := Mailauth(cConta,cSenha)
+	
+	
+	If lRet
+		
+		lResult2 := MailSend( cConta, { cEmailTo }, { }, { cEmailBcc }, cAssunto, cMensagem,, .F. )
+		If !lResult2
+			//Erro no envio do email
+			cError:=MailGetErr( )
+		Endif
+		
+	Else
+		cError:=MailGetErr( )
+	Endif
+	
+	MailSmtpOff()  // Disconnect to Smtp Server
+	
+Else
+	//Erro na conexao com o SMTP Server
+	cError:=MailGetErr( )
+Endif
+//EndIf
+Return(lResult)

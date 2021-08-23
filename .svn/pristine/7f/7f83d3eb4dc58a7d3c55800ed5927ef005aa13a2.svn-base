@@ -1,0 +1,12 @@
+{
+  "name": "bacioIventario",
+  "version": "1.0.0",
+  "description": "rotina para inventário bacio di latte",
+  "main": "index.js",
+  "author": "Renan Paiva",
+  "license": "Comercial",
+  "dependencies": {
+    "@ng-select/ng-select": "^1.0.6",
+    "ng-select": "^1.0.0"
+  }
+}

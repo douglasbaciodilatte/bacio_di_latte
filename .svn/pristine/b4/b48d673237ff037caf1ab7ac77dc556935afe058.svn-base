@@ -1,0 +1,716 @@
+
+
+//Bibliotecas
+#Include 'Protheus.ch'
+#Include 'FWMVCDef.ch'
+
+//Variáveis Estáticas
+Static cTitulo := "Tabelas Genéricas"
+
+/*/{Protheus.doc} zModel2
+Exemplo de Modelo 2 para cadastro de SX5
+@author Atilio
+@since 14/01/2017
+@version 1.0
+	@return Nil, Função não tem retorno
+	@example
+	u_zModel2()
+	@obs Para o erro na exclusão - FORMCANDEL da CC2, abra a SX9, e onde tiver '12'+CC2_COD, substitua por '12'+CC2_CODMUN
+/*/
+
+User Function bdlinv4()
+	Local aArea   := GetArea()
+	Local oBrowse
+	Local cFunBkp := FunName()
+	Local aLeg := {}
+	Private cAlias := ""
+	SetFunName("bdlinv4")
+	
+	aLeg := aClone(U_fBwLeg(.f.))
+		//Cria um browse para a SX5, filtrando somente a tabela 00 (cabeçalho das tabelas
+	oBrowse := FWMBrowse():New()
+	oBrowse:SetAlias("ZZ5")
+	oBrowse:SetDescription(cTitulo)
+	oBrowse:SetFilterDefault("ZZ5->ZZ5_FILIAL == '" + xFilial("ZZ5") + "' .and. EMPTY(ZZ5->ZZ5_COD) ")
+	For nX := 1 to len(aLeg)
+		oBrowse:AddLegend( aLeg[nX,1], aLeg[nX,2],aLeg[nX,3] )
+	Next nX
+
+	oBrowse:Activate()
+	
+	SetFunName(cFunBkp)
+	RestArea(aArea)
+Return Nil
+
+/*---------------------------------------------------------------------*
+ | Func:  MenuDef                                                      |
+ | Autor: Daniel Atilio                                                |
+ | Data:  14/01/2017                                                   |
+ | Desc:  Criação do menu MVC                                          |
+ *---------------------------------------------------------------------*/
+
+Static Function MenuDef()
+	Local aRot := {}
+	
+	//Adicionando opções
+	//ADD OPTION aRot TITLE 'Visualizar' ACTION 'VIEWDEF.bdlinv4' OPERATION MODEL_OPERATION_VIEW   ACCESS 0 //OPERATION 1
+	//ADD OPTION aRot TITLE 'Incluir'    ACTION 'VIEWDEF.bdlinv4' OPERATION MODEL_OPERATION_INSERT ACCESS 0 //OPERATION 3
+	//ADD OPTION aRot TITLE 'Alterar'    ACTION 'VIEWDEF.bdlinv4' OPERATION MODEL_OPERATION_UPDATE ACCESS 0 //OPERATION 4
+	//ADD OPTION aRot TITLE 'Excluir'    ACTION 'VIEWDEF.bdlinv4' OPERATION MODEL_OPERATION_DELETE ACCESS 0 //OPERATION 5
+	aadd(aRot,{'Visualizar','VIEWDEF.bdlinv4',0,MODEL_OPERATION_VIEW  ,0,nil,nil,nil})
+	//aadd(aRot,{'Incluir'   ,'VIEWDEF.bdlinv4',0,MODEL_OPERATION_INSERT,0,nil,nil,nil})
+	//aadd(aRot,{'Alterar'   ,'VIEWDEF.bdlinv4',0,MODEL_OPERATION_UPDATE,0,nil,nil,nil})
+	//aadd(aRot,{'Excluir'   ,'VIEWDEF.bdlinv4',0,MODEL_OPERATION_DELETE,0,nil,nil,nil})
+	aadd(aRot,{'Legenda'   ,'U_fBwLeg()'     ,0,9                     ,0,nil,nil,nil})
+Return aRot
+
+/*---------------------------------------------------------------------*
+ | Func:  ModelDef                                                     |
+ | Autor: Daniel Atilio                                                |
+ | Data:  14/01/2017                                                   |
+ | Desc:  Criação do modelo de dados MVC                               |
+ *---------------------------------------------------------------------*/
+
+Static Function ModelDef()
+	
+	Local oStTmp   := FWFormModelStruct():New()
+	Local oStFilho := FWFormStruct(1, 'ZZ5')
+	Local bVldPos  := {|| u_VldX5Tab()}
+	Local bVldCom  := {|| u_SaveMd2()}
+	Local aSX5Rel  := {}
+	Private oModel   := Nil
+	//Adiciona a tabela na estrutura temporária
+	oStTmp:AddTable('ZZ5', {'ZZ5_FILIAL', 'ZZ5_DOC','ZZ5_LOCAL'}, "Cabecalho ZZ5")
+	
+	//Adiciona o campo de Filial
+	oStTmp:AddField(;
+		"Filial",;                                                                                  // [01]  C   Titulo do campo
+		"Filial",;                                                                                  // [02]  C   ToolTip do campo
+		"ZZ5_FILIAL",;                                                                               // [03]  C   Id do Field
+		"C",;                                                                                       // [04]  C   Tipo do campo
+		TamSX3("ZZ5_FILIAL")[1],;                                                                    // [05]  N   Tamanho do campo
+		0,;                                                                                         // [06]  N   Decimal do campo
+		Nil,;                                                                                       // [07]  B   Code-block de validação do campo
+		Nil,;                                                                                       // [08]  B   Code-block de validação When do campo
+		{},;                                                                                        // [09]  A   Lista de valores permitido do campo
+		.F.,;                                                                                       // [10]  L   Indica se o campo tem preenchimento obrigatório
+		FwBuildFeature( STRUCT_FEATURE_INIPAD, "Iif(!INCLUI,ZZ5->ZZ5_FILIAL,FWxFilial('ZZ5'))" ),;   // [11]  B   Code-block de inicializacao do campo
+		.T.,;                                                                                       // [12]  L   Indica se trata-se de um campo chave
+		.F.,;                                                                                       // [13]  L   Indica se o campo pode receber valor em uma operação de update.
+		.F.)                                                                                        // [14]  L   Indica se o campo é virtual
+	
+	//Adiciona o campo de Código da Tabela
+	oStTmp:AddField(;
+		"Documento",;                                                                    // [01]  C   Titulo do campo
+		"Documento",;                                                                    // [02]  C   ToolTip do campo
+		"ZZ5_DOC",;                                                                  // [03]  C   Id do Field
+		"C",;                                                                         // [04]  C   Tipo do campo
+		TamSX3("ZZ5_DOC")[1],;                                                      // [05]  N   Tamanho do campo
+		0,;                                                                           // [06]  N   Decimal do campo
+		Nil,;                                                                         // [07]  B   Code-block de validação do campo
+		Nil,;                                                                         // [08]  B   Code-block de validação When do campo
+		{},;                                                                          // [09]  A   Lista de valores permitido do campo
+		.T.,;                                                                         // [10]  L   Indica se o campo tem preenchimento obrigatório
+		FwBuildFeature( STRUCT_FEATURE_INIPAD, "Iif(!INCLUI,ZZ5->ZZ5_DOC,'')" ),;    // [11]  B   Code-block de inicializacao do campo
+		.T.,;                                                                         // [12]  L   Indica se trata-se de um campo chave
+		.F.,;                                                                         // [13]  L   Indica se o campo pode receber valor em uma operação de update.
+		.F.)                                                                          // [14]  L   Indica se o campo é virtual
+	
+	//Adiciona o campo de Código da Tabela
+	oStTmp:AddField(;
+		"Armazem",;                                                                    // [01]  C   Titulo do campo
+		"Documento",;                                                                    // [02]  C   ToolTip do campo
+		"ZZ5_LOCAL",;                                                                  // [03]  C   Id do Field
+		"C",;                                                                         // [04]  C   Tipo do campo
+		TamSX3("ZZ5_LOCAL")[1],;                                                      // [05]  N   Tamanho do campo
+		0,;                                                                           // [06]  N   Decimal do campo
+		Nil,;                                                                         // [07]  B   Code-block de validação do campo
+		Nil,;                                                                         // [08]  B   Code-block de validação When do campo
+		{},;                                                                          // [09]  A   Lista de valores permitido do campo
+		.T.,;                                                                         // [10]  L   Indica se o campo tem preenchimento obrigatório
+		FwBuildFeature( STRUCT_FEATURE_INIPAD, "Iif(!INCLUI,ZZ5->ZZ5_LOCAL,'')" ),;    // [11]  B   Code-block de inicializacao do campo
+		.T.,;                                                                         // [12]  L   Indica se trata-se de um campo chave
+		.F.,;                                                                         // [13]  L   Indica se o campo pode receber valor em uma operação de update.
+		.F.)                                                                          // [14]  L   Indica se o campo é virtual
+	
+	
+	//Adiciona o campo de Descrição
+	oStTmp:AddField(;
+		"Data",;                                                                     // [01]  C   Titulo do campo
+		"Data",;                                                                     // [02]  C   ToolTip do campo
+		"ZZ5_DATA",;                                                                 // [03]  C   Id do Field
+		"D",;                                                                        // [04]  C   Tipo do campo
+		TamSX3("ZZ5_DATA")[1],;                                                      // [05]  N   Tamanho do campo
+		0,;                                                                          // [06]  N   Decimal do campo
+		Nil,;                                                                        // [07]  B   Code-block de validação do campo
+		Nil,;                                                                        // [08]  B   Code-block de validação When do campo
+		{},;                                                                         // [09]  A   Lista de valores permitido do campo
+		.T.,;                                                                        // [10]  L   Indica se o campo tem preenchimento obrigatório
+		FwBuildFeature( STRUCT_FEATURE_INIPAD, "Iif(!INCLUI,ZZ5_DATA,'')" ),;        // [11]  B   Code-block de inicializacao do campo
+		.F.,;                                                                        // [12]  L   Indica se trata-se de um campo chave
+		.F.,;                                                                        // [13]  L   Indica se o campo pode receber valor em uma operação de update.
+		.F.)                                                                         // [14]  L   Indica se o campo é virtual
+	
+
+     oStFilho:AddField( ;
+                    AllTrim('') , ;             // [01] C Titulo do campo
+                    AllTrim('') , ;             // [02] C ToolTip do campo
+                    'ZZ5_STATUS1' , ;           // [03] C identificador (ID) do Field
+                    'C' , ;                     // [04] C Tipo do campo
+                    50 , ;                      // [05] N Tamanho do campo
+                    0 , ;                       // [06] N Decimal do campo
+                    NIL , ;                     // [07] B Code-block de validação do campo
+                    NIL , ;                     // [08] B Code-block de validação When do campo
+                    NIL , ;                     // [09] A Lista de valores permitido do campo
+                    NIL , ;                     // [10] L Indica se o campo tem preenchimento obrigatório
+                    { || Iif(ZZ5->ZZ5_STATUS == "F1", "BR_VERMELHO","BR_VERDE") } , ;           // [11] B Code-block de inicializacao do campo
+                    NIL , ;                     // [12] L Indica se trata de um campo chave
+                    NIL , ;                     // [13] L Indica se o campo pode receber valor em uma operação de update.
+                    .T. )                      // [14] L Indica se o campo é virtual
+
+	//Setando as propriedades na grid, o inicializador da Filial e Tabela, para não dar mensagem de coluna vazia
+	oStFilho:SetProperty('ZZ5_FILIAL', MODEL_FIELD_INIT, FwBuildFeature(STRUCT_FEATURE_INIPAD, '"*"'))
+	oStFilho:SetProperty('ZZ5_DOC'   , MODEL_FIELD_INIT, FwBuildFeature(STRUCT_FEATURE_INIPAD, '"*"'))
+	
+	//Criando o FormModel, adicionando o Cabeçalho e Grid
+	//oModel := MPFormModel():New('Descricao', /*bPreValidacao*/, { | oModel | fEXPMVC1V( oModel ) } , /*{ | oMdl | fEXPMVC1C( oMdl ) }*/ ,, /*bCancel*/ )
+	oModel := MPFormModel():New("bdlinv4M", , bVldPos, /*bVldCom*/,,,) 
+	oModel:AddFields("FORMCAB",/*cOwner*/,oStTmp)
+	oModel:AddGrid('ZZ5DETAIL','FORMCAB',oStFilho)
+	//oModel:GetModel( 'ZZ5DETAIL' ):SetLoadFilter( { { 'ZZ5_STATUS', "'99'" } } )
+	oModel:GetModel( 'ZZ5DETAIL' ):SetLoadFilter( , " ZZ5_COD <> '" + space(len(ZZ5->ZZ5_COD)) + "' ")
+	//Adiciona o relacionamento de Filho, Pai
+	aAdd(aSX5Rel, {'ZZ5_FILIAL', 'Iif(!INCLUI, ZZ5->ZZ5_FILIAL, FWxFilial("ZZ5"))'} )
+	aAdd(aSX5Rel, {'ZZ5_DOC'   , 'Iif(!INCLUI, ZZ5->ZZ5_DOC   ,   "")'} ) 
+	aAdd(aSX5Rel, {'ZZ5_LOCAL' , 'Iif(!INCLUI, ZZ5->ZZ5_LOCAL ,   "")'} ) 
+	aAdd(aSX5Rel, {'ZZ5_DATA'  , 'Iif(!INCLUI, ZZ5->ZZ5_DATA  ,   "")'} ) 
+	
+	
+	
+	//Criando o relacionamento
+	oModel:SetRelation('ZZ5DETAIL', aSX5Rel, ZZ5->(IndexKey(3)))
+	
+	//Setando o campo único da grid para não ter repetição
+	oModel:GetModel('ZZ5DETAIL'):SetUniqueLine({"ZZ5_COD","ZZ5_LOCAL","ZZ5_CLOTE","ZZ5_LOCAL" })
+	
+	//Setando outras informações do Modelo de Dados
+	oModel:SetDescription("Modelo de Dados do Cadastro "+cTitulo)
+	oModel:SetPrimaryKey({})
+	oModel:GetModel("FORMCAB"):SetDescription("Formulário do Cadastro "+cTitulo)
+Return oModel
+
+/*---------------------------------------------------------------------*
+ | Func:  ViewDef                                                      |
+ | Autor: Daniel Atilio                                                |
+ | Data:  14/01/2017                                                   |
+ | Desc:  Criação da visão MVC                                         |
+ *---------------------------------------------------------------------*/
+
+Static Function ViewDef()
+	Local oModel     := FWLoadModel("bdlinv4")
+	Local oStTmp     := FWFormViewStruct():New()
+	Local oStFilho   := FWFormStruct(2, 'ZZ5')
+	Local oView      := Nil
+	
+	//Adicionando o campo Chave para ser exibido
+	oStTmp:AddField(;
+				"ZZ5_DOC",;                	// [01]  C   Nome do Campo
+				"01",;                      // [02]  C   Ordem
+				"Tabela",;                  // [03]  C   Titulo do campo
+				'ZZ5_DOC',;   			 	// [04]  C   Descricao do campo
+				Nil,;                       // [05]  A   Array com Help
+				"C",;                       // [06]  C   Tipo do campo
+				"@!",;    					// [07]  C   Picture
+				Nil,;                       // [08]  B   Bloco de PictTre Var
+				Nil,;                       // [09]  C   Consulta F3
+				Iif(INCLUI, .T., .F.),;     // [10]  L   Indica se o campo é alteravel
+				Nil,;                       // [11]  C   Pasta do campo
+				Nil,;                       // [12]  C   Agrupamento do campo
+				Nil,;                       // [13]  A   Lista de valores permitido do campo (Combo)
+				Nil,;                       // [14]  N   Tamanho maximo da maior opção do combo
+				Nil,;                       // [15]  C   Inicializador de Browse
+				Nil,;                       // [16]  L   Indica se o campo é virtual
+				Nil,;                       // [17]  C   Picture Variavel
+				Nil)                        // [18]  L   Indica pulo de linha após o campo
+	
+	
+	//Adicionando o campo Chave para ser exibido
+	oStTmp:AddField(;
+				"ZZ5_LOCAL",;                	// [01]  C   Nome do Campo
+				"02",;                      // [02]  C   Ordem
+				"Armazem",;                  // [03]  C   Titulo do campo
+				'ZZ5_LOCAL',;   			 	// [04]  C   Descricao do campo
+				Nil,;                       // [05]  A   Array com Help
+				"C",;                       // [06]  C   Tipo do campo
+				"@!",;    					// [07]  C   Picture
+				Nil,;                       // [08]  B   Bloco de PictTre Var
+				Nil,;                       // [09]  C   Consulta F3
+				Iif(INCLUI, .T., .F.),;     // [10]  L   Indica se o campo é alteravel
+				Nil,;                       // [11]  C   Pasta do campo
+				Nil,;                       // [12]  C   Agrupamento do campo
+				Nil,;                       // [13]  A   Lista de valores permitido do campo (Combo)
+				Nil,;                       // [14]  N   Tamanho maximo da maior opção do combo
+				Nil,;                       // [15]  C   Inicializador de Browse
+				Nil,;                       // [16]  L   Indica se o campo é virtual
+				Nil,;                       // [17]  C   Picture Variavel
+				Nil)                        // [18]  L   Indica pulo de linha após o campo
+	
+
+	oStTmp:AddField(;
+				"ZZ5_DATA",;                // [01]  C   Nome do Campo
+				"03",;                      // [02]  C   Ordem
+				"Data",;                    // [03]  C   Titulo do campo
+				X3Descric('ZZ5_DATA'),;     // [04]  C   Descricao do campo
+				Nil,;                       // [05]  A   Array com Help
+				"C",;                       // [06]  C   Tipo do campo
+				X3Picture("X5_DESCRI"),;    // [07]  C   Picture
+				Nil,;                       // [08]  B   Bloco de PictTre Var
+				Nil,;                       // [09]  C   Consulta F3
+				.T.,;                       // [10]  L   Indica se o campo é alteravel
+				Nil,;                       // [11]  C   Pasta do campo
+				Nil,;                       // [12]  C   Agrupamento do campo
+				Nil,;                       // [13]  A   Lista de valores permitido do campo (Combo)
+				Nil,;                       // [14]  N   Tamanho maximo da maior opção do combo
+				Nil,;                       // [15]  C   Inicializador de Browse
+				Nil,;                       // [16]  L   Indica se o campo é virtual
+				Nil,;                       // [17]  C   Picture Variavel
+				Nil)                        // [18]  L   Indica pulo de linha após o campo
+	
+  	oStFilho:AddField(;						// Ord. Tipo Desc.
+				'ZZ5_STATUS1',;    	    	// [01] C   Nome do Campo
+				"00",;              		// [02] C   Ordem
+				AllTrim( '' ),;    	 		// [03] C   Titulo do campo
+				AllTrim( '' ),;     		// [04] C   Descricao do campo
+				{ 'Legenda' },;     		// [05] A   Array com Help
+				'C',;     					// [06] C   Tipo do campo
+				'@BMP',;				    // [07] C   Picture
+				NIL,;					    // [08] B   Bloco de Picture Var
+				'',;					    // [09] C   Consulta F3
+				.T.,;     					// [10] L   Indica se o campo é alteravel
+				NIL,;    					// [11] C   Pasta do campo
+				NIL,;    					// [12] C   Agrupamento do campo
+				NIL,;     					// [13] A   Lista de valores permitido do campo (Combo)
+				NIL,;     					// [14] N   Tamanho maximo da maior opção do combo
+				NIL,;     					// [15] C   Inicializador de Browse
+				.T.,;     					// [16] L   Indica se o campo é virtual
+				NIL,;     					// [17] C   Picture Variavel
+				NIL)       					// [18] L   Indica pulo de linha após o campo
+
+	//Criando a view que será o retorno da função e setando o modelo da rotina
+	oView := FWFormView():New()
+	oView:SetModel(oModel)
+	oView:AddField("VIEW_CAB", oStTmp, "FORMCAB")
+	oView:AddGrid('VIEW_ZZ5',oStFilho,'ZZ5DETAIL')
+	
+	oView:AddUserButton( 'Efetiva Inventario', 'NOTE', {|oView| fEfetiva(oView)} )
+	//Setando o dimensionamento de tamanho
+	oView:CreateHorizontalBox('CABEC',20)
+	oView:CreateHorizontalBox('GRID',80)
+	
+	//Amarrando a view com as box
+	oView:SetOwnerView('VIEW_CAB','CABEC')
+	oView:SetOwnerView('VIEW_ZZ5','GRID')
+	
+	//Habilitando título
+	oView:EnableTitleView('VIEW_CAB','Cabeçalho - Tabela Genérica')
+	oView:EnableTitleView('VIEW_ZZ5','Itens - Tabela Genérica')
+	
+	//Tratativa padrão para fechar a tela
+	oView:SetCloseOnOk({||.T.})
+	
+	//Remove os campos de Filial e Tabela da Grid
+	oStFilho:RemoveField('ZZ5_FILIAL')
+	oStFilho:RemoveField('ZZ5_DOC'   )
+	oStFilho:RemoveField('ZZ5_DATA'  )
+	oStFilho:RemoveField('ZZ5_STATUS')
+	oStFilho:RemoveField('ZZ5_LOCAL' )
+	oStFilho:RemoveField('ZZ5_UM12'  )
+	oStFilho:RemoveField('ZZ5_UM13'  )
+	oStFilho:RemoveField('ZZ5_UM14'  )
+	oStFilho:RemoveField('ZZ5_UM22'  )
+	oStFilho:RemoveField('ZZ5_UM23'  )
+	oStFilho:RemoveField('ZZ5_UM24'  )
+
+
+
+Return oView
+
+/*/{Protheus.doc} zVldX5Tab
+Função chamada na validação do botão Confirmar, para verificar se já existe a tabela digitada
+@type function
+@author Atilio
+@since 14/01/2017
+@version 1.0
+	@return lRet, .T. se pode prosseguir e .F. se deve barrar
+/*/
+
+User Function VldX5Tab()
+	Local aArea      := GetArea()
+	Local lRet       := .T.
+	Local oModelDad  := FWModelActive()
+	Local cFilZZ5    := oModelDad:GetValue('FORMCAB', 'ZZ5_FILIAL')
+	Local cCodigo    := SubStr(oModelDad:GetValue('FORMCAB', 'ZZ5_DOC'), 1, TamSX3('ZZ5_DOC')[01])
+	Local nOpc       := oModelDad:GetOperation()
+	
+	//Se for Inclusão
+	If nOpc == MODEL_OPERATION_INSERT
+		DbSelectArea('ZZ5')
+		SX5->(DbSetOrder(1)) //X5_FILIAL + X5_TABELA + X5_CHAVE
+		
+		//Se conseguir posicionar, tabela já existe
+		//If SX5->(DbSeek(cFilZZ5 + '00' + cCodigo))
+			Aviso('Atenção', 'Esse código de tabela já existe!', {'OK'}, 02)
+			//lRet := .F.
+		//EndIf
+	EndIf
+	
+	RestArea(aArea)
+Return lRet
+
+/*/{Protheus.doc} zSaveMd2
+Função desenvolvida para salvar os dados do Modelo 2
+@type function
+@author Atilio
+@since 14/01/2017
+@version 1.0
+/*/
+
+User Function SaveMd2()
+	Local aArea      := GetArea()
+	Local lRet       := .T.
+	Local oModelDad  := FWModelActive()
+	Local cFilZZ5    := oModelDad:GetValue('FORMCAB', 'ZZ5_FILIAL')
+	Local cCodigo    := SubStr(oModelDad:GetValue('FORMCAB', 'ZZ5_DOC'), 1, TamSX3('ZZ5_DOC')[01])
+	Local cDescri    := oModelDad:GetValue('FORMCAB', 'ZZ5_DATA')
+	Local nOpc       := oModelDad:GetOperation()
+	Local oModelGrid := oModelDad:GetModel('ZZ5DETAIL')
+	Local aHeadAux   := oModelGrid:aHeader
+	Local aColsAux   := oModelGrid:aCols
+	Local nPosChave  := aScan(aHeadAux, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_COD")})
+	Local nPosDescPt := aScan(aHeadAux, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_DESRC")})
+	Local nPosDescSp := nPosDescPt//aScan(aHeadAux, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_UM11")})
+	Local nPosDescEn := nPosDescPt//aScan(aHeadAux, {|x| AllTrim(Upper(x[2])) == AllTrim("X5_DESCENG")})
+	Local nAtual     := 0
+	
+	DbSelectArea('ZZ5')
+	ZZ5->(DbSetOrder(3)) //X5_FILIAL + X5_TABELA + X5_CHAVE
+	
+	//Se for Inclusão
+	If nOpc == MODEL_OPERATION_INSERT
+		//Cria o registro na tabela 00 (Cabeçalho de tabelas)
+		/*RecLock('SX5', .T.)
+			X5_FILIAL   := cFilZZ5
+			X5_TABELA   := '00'
+			X5_CHAVE    := cCodigo
+			X5_DESCRI   := cDescri
+			X5_DESCSPA  := cDescri
+			X5_DESCENG  := cDescri
+		SX5->(MsUnlock())
+		*/
+		Alert("MODEL_OPERATION_INSERT")
+		//Percorre as linhas da grid
+		For nAtual := 1 To Len(aColsAux)
+			//Se a linha não estiver excluída, inclui o registro
+			If ! aColsAux[nAtual][Len(aHeadAux)+1]
+				/*RecLock('SX5', .T.)
+					X5_FILIAL   := cFilZZ5
+					X5_TABELA   := cCodigo
+					X5_CHAVE    := aColsAux[nAtual][nPosChave]
+					X5_DESCRI   := aColsAux[nAtual][nPosDescPt]
+					X5_DESCSPA  := aColsAux[nAtual][nPosDescSp]
+					X5_DESCENG  := aColsAux[nAtual][nPosDescEn]
+				SX5->(MsUnlock())*/
+			EndIf
+		Next
+		
+	//Se for Alteração
+	ElseIf nOpc == MODEL_OPERATION_UPDATE
+		//Se conseguir posicionar, altera a descrição digitada
+		/*If SX5->(DbSeek(cFilZZ5 + '00' + cCodigo))
+			RecLock('SX5', .F.)
+				X5_DESCRI   := cDescri
+				X5_DESCSPA  := cDescri
+				X5_DESCENG  := cDescri
+			SX5->(MsUnlock())
+		EndIf*/
+		Alert("MODEL_OPERATION_UPDATE")
+		//Percorre o acols
+		/*For nAtual := 1 To Len(aColsAux)
+			//Se a linha estiver excluída
+			If aColsAux[nAtual][Len(aHeadAux)+1]
+				//Se conseguir posicionar, exclui o registro 
+				If SX5->(DbSeek(cFilZZ5 + cCodigo + aColsAux[nAtual][nPosChave]))
+					RecLock('SX5', .F.)
+						DbDelete()
+					SX5->(MsUnlock())
+				EndIf
+				
+			Else
+				//Se conseguir posicionar no registro, será alteração
+				If SX5->(DbSeek(cFilZZ5 + cCodigo + aColsAux[nAtual][nPosChave]))
+					RecLock('SX5', .F.)
+				
+				//Senão, será inclusão
+				Else
+					RecLock('SX5', .T.)
+					X5_FILIAL := cFilZZ5
+					X5_TABELA := cCodigo
+					X5_CHAVE    := aColsAux[nAtual][nPosChave]
+				EndIf
+				
+				X5_DESCRI   := aColsAux[nAtual][nPosDescPt]
+				X5_DESCSPA  := aColsAux[nAtual][nPosDescSp]
+				X5_DESCENG  := aColsAux[nAtual][nPosDescEn]
+				SX5->(MsUnlock())
+			EndIf
+		Next
+		*/
+	//Se for Exclusão
+	ElseIf nOpc == MODEL_OPERATION_DELETE
+		//Se conseguir posicionar, exclui o registro
+		Alert("MODEL_OPERATION_DELETE")
+			/*
+		If SX5->(DbSeek(cFilZZ5 + '00' + cCodigo))
+			RecLock('SX5', .F.)
+				DbDelete()
+			SX5->(MsUnlock())
+		EndIf
+		
+		//Percorre a grid
+		For nAtual := 1 To Len(aColsAux)
+			//Se conseguir posicionar, exclui o registro
+			If SX5->(DbSeek(cFilZZ5 + cCodigo + aColsAux[nAtual][nPosChave]))
+				RecLock('SX5', .F.)
+					DbDelete()
+				SX5->(MsUnlock())
+			EndIf
+		Next
+		*/
+	EndIf
+	
+	//Se não for inclusão, volta o INCLUI para .T. (bug ao utilizar a Exclusão, antes da Inclusão)
+	If nOpc != MODEL_OPERATION_INSERT
+		INCLUI := .T.
+	EndIf
+	
+	RestArea(aArea)
+Return lRet
+//***********************************************************************************************************
+
+
+//**********************************************************************************************************
+
+Function U_fBwLeg(lVisual)
+Local xLeg := {}
+
+DEFAULT lVisual := .T.
+
+AADD( xLeg,{"ZZ5_CONTAG == '000'"  ,"BR_VERDE"       ,"Contagem Iniciada"      })
+AADD( xLeg,{"ZZ5_CONTAG == '001'"  ,"BR_AMARELO"     ,"Contagem 1 Finalizado"  })
+AADD( xLeg,{"ZZ5_CONTAG == '002'"  ,"BR_LARANJA"     ,"Contagem 2 Finalizado"  })
+AADD( xLeg,{"ZZ5_CONTAG == '003'"  ,"BR_AZUL"        ,"Contagem 3 Finalizado"  })
+AADD( xLeg,{"ZZ5_CONTAG == '004'"  ,"BR_CINZA"       ,"Contagem 4 finalizada"  })
+//AADD( xLeg,{"ZZ5_STATUS == '39'"                          ,"BR_VERDE_ESCURO","Contagem 3 Finalizado"  })
+//AADD( xLeg,{"ZZ5_STATUS >= '40'.and. ZZ5_STATUS < '49'"   ,"BR_VIOLETA"     ,"Contagem 4 Inicializada"})
+//AADD( xLeg,{"ZZ5_STATUS == '49'"                          ,"BR_BRANCO"      ,"Contagem 4 Finalizado"  })
+AADD( xLeg,{"ZZ5_STATUS == '99'"  ,"BR_VERMELHO"    ,"Finalizado"             })
+
+if lVisual .and. .f.
+	BrwLegenda("Liberação de Nota - Controle de Qualidade",;
+			"Legenda",{;
+					{"BR_VERDE"       ,"Não Coontado"           },;
+					{"BR_AMARELO"     ,"Contagem 1 Inicializada"},;
+					{"BR_AZUL_CLARO"  ,"Contagem 1 Finalizado"  },;
+					{"BR_LARANJA"     ,"Contagem 2 Inicializada"},;
+					{"BR_AZUL"        ,"Contagem 2 Finalizado"  },;
+					{"BR_CINZA"       ,"Contagem 3 Inicializada"},;
+					{"BR_VERDE_ESCURO","Contagem 3 Finalizado"  },;
+					{"BR_VIOLETA"     ,"Contagem 4 Inicializada"},;
+					{"BR_BRANCO"      ,"Contagem 4 Finalizado"  },;
+					{"BR_VERMELHO"    ,"Finalizado"             };
+			})
+endif
+
+Return xLeg
+
+//*************************************************************************************************
+
+
+
+//*************************************************************************************************
+
+
+Function U_fTLeg(lVisual)
+Local xLeg := {}
+
+DEFAULT lVisual := .T.
+
+AADD( xLeg,{"ZZ5_STATUS == '  '"                          ,"BR_VERDE"       ,"Não Contado"            })
+AADD( xLeg,{"ZZ5_STATUS >= '00' .and. ZZ5_STATUS <'19'"   ,"BR_AMARELO"     ,"Contagem 1 Inicializada"})
+AADD( xLeg,{"ZZ5_STATUS == '19'"                          ,"BR_AZUL_CLARO"  ,"Contagem 1 Finalizado"  })
+AADD( xLeg,{"ZZ5_STATUS >= '20' .and. ZZ5_STATUS < '29'"  ,"BR_LARANJA"     ,"Contagem 2 Inicializada"})
+AADD( xLeg,{"ZZ5_STATUS == '29'"                          ,"BR_AZUL"        ,"Contagem 2 Finalizado"  })
+AADD( xLeg,{"ZZ5_STATUS >= '30' .and. ZZ5_STATUS < '39'"  ,"BR_CINZA"       ,"Contagem 3 Inicializada"})
+AADD( xLeg,{"ZZ5_STATUS == '99' .and. ZZ5_CONTAG == '003'","BR_VERDE_ESCURO","Contagem 3 Finalizado"  })
+AADD( xLeg,{"ZZ5_STATUS >= '40' .and. ZZ5_STATUS < '49'"   ,"BR_VIOLETA"     ,"Contagem 4 Inicializada"})
+AADD( xLeg,{"ZZ5_STATUS == '49'"                          ,"BR_BRANCO"      ,"Contagem 4 Finalizado"  })
+AADD( xLeg,{"ZZ5_STATUS == 'ZZ'"                          ,"BR_VERMELHO"    ,"Finalizado"             })
+
+if lVisual
+	BrwLegenda("Liberação de Nota - Controle de Qualidade",;
+			"Legenda",{;
+					{"BR_VERDE"       ,"Não Coontado"           },;
+					{"BR_AMARELO"     ,"Contagem 1 Inicializada"},;
+					{"BR_AZUL_CLARO"  ,"Contagem 1 Finalizado"  },;
+					{"BR_LARANJA"     ,"Contagem 2 Inicializada"},;
+					{"BR_AZUL"        ,"Contagem 2 Finalizado"  },;
+					{"BR_CINZA"       ,"Contagem 3 Inicializada"},;
+					{"BR_VERDE_ESCURO","Contagem 3 Finalizado"  },;
+					{"BR_VIOLETA"     ,"Contagem 4 Inicializada"},;
+					{"BR_BRANCO"      ,"Contagem 4 Finalizado"  },;
+					{"BR_VERMELHO"    ,"Finalizado"             };
+			})
+endif
+
+Return xLeg
+
+/*
+
+GREEN - Para a cor Verde
+RED - Para a cor Vermelha
+YELLOW - Para a cor Amarela
+ORANGE - Para a cor Laranja
+BLUE - Para a cor Azul
+GRAY - Para a cor Cinza
+BROWN - Para a cor Marrom
+BLACK - Para a cor Preta
+PINK - Para a cor Rosa
+WHITE - Para a cor Branca
+*/
+//Monta as legendas (Cor, Legenda)
+    /*
+	aAdd(aLegenda,{"BR_AMARELO",      "Teste 01"})
+    aAdd(aLegenda,{"BR_AZUL",         "Teste 02"})
+    aAdd(aLegenda,{"BR_AZUL_CLARO",   "Teste 03"})
+    aAdd(aLegenda,{"BR_BRANCO",       "Teste 04"})
+    aAdd(aLegenda,{"BR_CANCEL",       "Teste 05"})
+    aAdd(aLegenda,{"BR_CINZA",        "Teste 06"})
+    aAdd(aLegenda,{"BR_LARANJA",      "Teste 07"})
+    aAdd(aLegenda,{"BR_MARROM",       "Teste 08"})
+    aAdd(aLegenda,{"BR_MARRON",       "Teste 09"})
+    aAdd(aLegenda,{"BR_PINK",         "Teste 10"})
+    aAdd(aLegenda,{"BR_PRETO",        "Teste 11"})
+    aAdd(aLegenda,{"BR_VERDE",        "Teste 12"})
+    aAdd(aLegenda,{"BR_VERDE_ESCURO", "Teste 13"})
+    aAdd(aLegenda,{"BR_VERMELHO",     "Teste 14"})
+    aAdd(aLegenda,{"BR_VIOLETA"    ,     "Teste 15"})
+	*/
+
+Static Function fEfetiva(oView)
+
+	Local aArea      := GetArea()
+	Local lRet       := .T.
+	Local oModelDad  := FWModelActive()
+	Local cFilZZ5    := oModelDad:GetValue('FORMCAB', 'ZZ5_FILIAL')
+	Local cCodigo    := SubStr(oModelDad:GetValue('FORMCAB', 'ZZ5_DOC'), 1, TamSX3('ZZ5_DOC')[01])
+	Local cDescri    := oModelDad:GetValue('FORMCAB', 'ZZ5_DATA')
+	Local nOpc       := oModelDad:GetOperation()
+	Local oModelGrid := oModelDad:GetModel('ZZ5DETAIL')
+	Local aHeadAux   := oModelGrid:aHeader
+	
+	Local aColsAux   := oModelGrid:aCols
+	Local nPosFil    := aScan(aHeadAux, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_FILIAL"  )})
+	Local nPosProd   := aScan(aHeadAux, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_COD"     )})
+	Local nPosLocal  := aScan(aHeadAux, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_LOCAL"   )})
+	Local nPosEnder  := aScan(aHeadAux, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_ENDER"   )})
+	Local nPosLote   := aScan(aHeadAux, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_LOTECT"  )})
+	Local nPosVenc   := aScan(aHeadAux, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_DTVALI"  )})
+	Local nPosDoc    := aScan(aHeadAux, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_DOC"     )})
+	Local nPosDat    := aScan(aHeadAux, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_DATA"    )})
+	Local nPosStat   := aScan(aHeadAux, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_STATUS"  )})
+	Local nPosCont   := aScan(aHeadAux, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_CONTAG"  )})
+	Local nPosQtd1   := 0 //aScan(aHeadAux, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_QTD11"  )})
+	Local nPosQtd2   := 0 //aScan(aHeadAux, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_QTD21"  )})
+	
+	
+
+	Local nAtual     := 0
+	Local nX := 1
+	Alert("Rotina em Desenvolvimento")
+	return
+	DbSelectArea('SB7')
+	SB7->(DbSetOrder(1)) //X5_FILIAL + X5_TABELA + X5_CHAVE
+	
+	_NUMSERI := SPACE(LEN(SB7->B7_NUMSERI))
+	_NUMLOTE := SPACE(LEN(SB7->B7_NUMLOTE))
+
+	For nX := 1 to len(oModelGrid:aDataModel)
+		nCont := oModelGrid:aDataModel[nX, 1, 1, nPosCont]
+		nCont := substr(nCont,3,1)
+
+		nPosQtd1   := aScan(aHeadAux, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_QTD1" + nCont  )})
+		nPosQtd2   := aScan(aHeadAux, {|x| AllTrim(Upper(x[2])) == AllTrim("ZZ5_QTD2" + nCont  )})
+	
+   		_FILIAL  := oModelGrid:aDataModel[nX, 1, 1, nPosFil   ]  
+		_COD     := oModelGrid:aDataModel[nX, 1, 1, nPosProd  ] 
+        _LOCAL   := oModelGrid:aDataModel[nx, 1, 1, nPosLocal ]
+        _TIPO    := posicione("SB1",1,_FILIAL+_COD ,"B1_TIPO" )
+        _DOC     := oModelGrid:aDataModel[nX, 1, 1, nPosDoc   ]          
+        _QUANT   := oModelGrid:aDataModel[nX, 1, 1, nPosQtd1  ]
+        _QTSEGUM := oModelGrid:aDataModel[nX, 1, 1, nPosQtd2  ]
+        _DATA    := oModelGrid:aDataModel[nX, 1, 1, nPosDat   ]
+        _ORIGEM  := "BDLINV4"
+        _STATUS  := "1"                    
+        _LOTECTL := oModelGrid:aDataModel[nX, 1, 1, nPosLote  ]
+        _DTVALID := oModelGrid:aDataModel[nX, 1, 1, nPosVenc  ]
+        _CONTAGE := oModelGrid:aDataModel[nX, 1, 1, nPosCont  ]
+        _LOCALIZ := oModelGrid:aDataModel[nX, 1, 1, nPosEnder ]
+		
+		//Chave Unica SB7
+		//B7_FILIAL+ DTOS(B7_DATA) + B7_COD + B7_LOCAL+B7_LOTECTL
+		
+		if !(DBSEEK(_FILIAL+DTOS(_DATA) + _COD + _LOCAL + _LOCALIZ + _NUMSERI + _LOTECTL + _NUMLOTE + _CONTAGE) )
+			RecLock("SB7", .T.)
+
+				SB7->B7_FILIAL  := _FILIAL   //oModelGrid:aDataModel[nX, 1, 1, 1  ]  
+				SB7->B7_COD     := _COD      //oModelGrid:aDataModel[nX, 1, 1, nPosProd  ] 
+				SB7->B7_LOCAL   := _LOCAL    ///oModelGrid:aDataModel[nx, 1, 1, nPosLocal ]
+				SB7->B7_TIPO    := _TIPO
+				SB7->B7_DOC     := _DOC      //oModelGrid:aDataModel[nX, 1, 1, nPosDoc   ]          
+				SB7->B7_QUANT   := _QUANT    //oModelGrid:aDataModel[nX, 1, 1, nPosQtd1  ]
+				SB7->B7_QTSEGUM := _QTSEGUM ///oModelGrid:aDataModel[nX, 1, 1, nPosQtd2  ]
+				SB7->B7_DATA    := _DATA    // oModelGrid:aDataModel[nX, 1, 1, nPosDat   ]
+				SB7->B7_ORIGEM  := "BDLINV4"
+				SB7->B7_STATUS  := "1"                    
+				SB7->B7_LOTECTL := _LOTECTL//oModelGrid:aDataModel[nX, 1, 1, nPosLote  ]
+				SB7->B7_DTVALID := _DTVALID //oModelGrid:aDataModel[nX, 1, 1, nPosVenc  ]
+				SB7->B7_CONTAGE := _CONTAGE //oModelGrid:aDataModel[nX, 1, 1, nPosCont  ]
+				SB7->B7_LOCALIZ := _LOCALIZ // oModelGrid:aDataModel[nX, 1, 1, nPosEnder ]
+				SB7->(MsUnLock()) 
+		endif
+    Next nX
+
+
+
+	//Se for Inclusão
+	If nOpc == MODEL_OPERATION_INSERT
+	//Se for Alteração
+	ElseIf nOpc == MODEL_OPERATION_UPDATE
+	//Se for Exclusão
+	ElseIf nOpc == MODEL_OPERATION_DELETE
+		
+	EndIf
+	
+	//Gambi Se não for inclusão, volta o INCLUI para .T. (bug ao utilizar a Exclusão, antes da Inclusão)
+	If nOpc != MODEL_OPERATION_INSERT
+		INCLUI := .T.
+	EndIf
+	
+	RestArea(aArea)
+Return 
+
+
+//********************************************************************************************************************
+//oModelGrid:aDataModel[1,1,1,1] == oModelGrid:aDataModel[2,1,1,1]
+
+//********************************************************************************************************************

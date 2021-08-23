@@ -1,0 +1,645 @@
+#line 1 "c:/TOTVS/INCLUDES\PROTHEUS.ch"
+#line 1 "c:/TOTVS/INCLUDES\dialog.ch"
+#line 28 "PROTHEUS.ch"
+#line 1 "c:/TOTVS/INCLUDES\font.ch"
+#line 29 "PROTHEUS.ch"
+#line 1 "c:/TOTVS/INCLUDES\ptmenu.ch"
+#line 31 "PROTHEUS.ch"
+#line 1 "c:/TOTVS/INCLUDES\print.ch"
+#line 33 "PROTHEUS.ch"
+#line 1 "c:/TOTVS/INCLUDES\colors.ch"
+#line 35 "PROTHEUS.ch"
+#line 1 "c:/TOTVS/INCLUDES\folder.ch"
+#line 37 "PROTHEUS.ch"
+#line 1 "c:/TOTVS/INCLUDES\msobject.ch"
+#line 38 "PROTHEUS.ch"
+#line 1 "c:/TOTVS/INCLUDES\vkey.ch"
+#line 42 "PROTHEUS.ch"
+#line 1 "c:/TOTVS/INCLUDES\winapi.ch"
+#line 44 "PROTHEUS.ch"
+#line 1 "c:/TOTVS/INCLUDES\fwcommand.ch"
+#line 47 "PROTHEUS.ch"
+#line 1 "c:/TOTVS/INCLUDES\fwcss.ch"
+#line 50 "PROTHEUS.ch"
+#line 2 "c:\Users\dougl\Documents\TDS\Bacio_Di_Latte\Bacio di Latte\RH\Relatorios\Recibo_de_Ferias\\c:/Users/dougl/Documents/TDS/Bacio_Di_Latte/Bacio di Latte/RH/Relatorios/Recibo_de_Ferias/xGPER130.prw"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Function U_xGPER130()
+
+
+
+Local cString  := "SRA"
+Local aOrd     := {" Matricula "," C.Custo + Matric","C.Custo + Nome","Nome"}
+
+Local cDesc1   := "Aviso / Recibo de Ferias "
+Local cDesc2   := "Sera impresso de acordo com os parametros solicitados pelo"
+Local cDesc3   := "usuario."
+Local cSavAlias,nSavRec,nSavOrdem
+Local lPnm070TamPE := ExistBlock( "PNM070TAM" )
+
+
+
+
+Private aReturn := {"Zebrado", 1,"Administrador", 1, 2, 1, "",1 }
+Private nomeprog:="GPER130"
+Private anLinha := { },nLastKey := 0
+Private cPerg   :="GPR130"
+Private aStruSRF	:= {}
+
+
+
+Private cPd13o := Space(3)
+Private aCodFol := {}
+
+
+
+
+Private Titulo  := "RECIBO E AVISO DE FERIAS"
+Private AT_PRG  := "GPER130"
+Private wCabec0 := 3
+Private wCabec1 := ""
+Private wCabec2 := ""
+Private wCabec3 := ""
+Private CONTFL  := 1
+Private nLi     := 0
+Private nTamanho:= "P"
+
+cSavAlias := Alias()
+nSavRec   := RecNo()
+nSavOrdem := IndexOrd()
+
+If lPnm070TamPE
+ 	IF ( ValType( uRetBlock := ExecBlock("PNM070TAM", .F. , .F. ))  == "C" )
+   	   nTamanho := uRetBlock
+	Endif
+EndIf
+
+
+
+
+pergunte("GPR130", .F. )
+
+
+
+
+wnrel:="GPER130"
+wnrel:=SetPrint(cString,wnrel,cPerg,@Titulo,cDesc1,cDesc2,cDesc3, .F. ,aOrd,,nTamanho)
+
+If nLastKey = 27
+	Return
+Endif
+
+SetDefault(aReturn,cString)
+
+If nLastKey = 27
+	Return
+Endif
+
+RptStatus({|lEnd| GP130Imp(@lEnd,wnRel,cString)},Titulo)
+
+dbselectarea(cSavAlias)
+dbsetorder(nSavOrdem)
+dbgoto(nSavrec)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Static Function GP130IMP(lEnd,WnRel,cString)
+
+
+
+
+
+Local aPeriodos  := {}
+
+
+Local lTemCpoProg
+
+
+Local nImprVias
+Local nCnt
+Local i
+
+
+Local cRot 			:= ""
+Local cTipoRot 		:= ""
+
+
+
+
+
+Local cAcessaSRA	:= &( " { || " + ChkRH( "GPER130" , "SRA" , "2" ) + " } " )
+
+Private nSol13,nSolAb,nRecib,nRecAb,nRec13,cFilDe,cFilAte
+Private cMatDe,cMatAte,cCcDe,cCcAte,cNomDe,cNomAte,cDtSt13
+Private nFaltas	:= Val_Salmin:=0
+Private Salario	:= SalHora := SalDia := SalMes := nSalPg := 0.00
+Private lAchou		:= .F. 
+Private aInfo		:= {}
+Private aTabFer	:= {}
+Private aCodBenef	:= {}
+Private nAviso,lImpAv,dDtfDe,dDtfAte,nImprDem
+
+Private DaAuxI		:= Ctod("//")
+Private DaAuxF		:= Ctod("//")
+Private cAboAnt	:= If(GetMv("MV_ABOPEC")=="S","1","2")
+Private cAboPec	:= ""
+
+Private aVerbsAbo		:= {}
+Private aVerbs13Abo	:= {}
+Private aPeriodo	:= {}
+Private NDBANCO
+
+
+
+
+nOrdem  := aReturn[8]
+nSol13  := mv_par01
+nSolAb  := mv_par02
+nAviso  := mv_par03
+nRecib  := mv_par04
+nRecAb  := mv_par05
+nRec13  := mv_par06
+nDtRec  := mv_par07
+dDtfDe  := mv_par08
+dDtfAte := mv_par09
+cFilDe  := mv_par10
+cFilAte := mv_par11
+cMatDe  := mv_par12
+cMatAte := mv_par13
+cCcDe   := mv_par14
+cCcAte  := mv_par15
+cNomDe  := mv_par16
+cNomAte := mv_par17
+dDtSt13 := mv_par18
+nVias   := mv_par19
+dDtPgDe := mv_par20
+dDtPgAte:= mv_par21
+
+
+
+
+
+nImprDem:= Iif( cPaisLoc == "BRA", mv_par22, 2 )
+nDAbnPec:= IiF (cPaisLoc == "BRA", mv_par23, 15)
+
+
+
+lTemCpoProg := fTCpoProg()
+
+
+
+
+dbSelectArea("SRA")
+
+If nOrdem == 1
+	dbSetOrder(1)
+ElseIf nOrdem == 2
+	dbSetOrder(2)
+ElseIf nOrdem == 3
+	dbSetOrder(8)
+ElseIf nOrdem == 4
+	dbSetOrder(3)
+Endif
+
+If nOrdem == 1
+	dbSeek( cFilDe + cMatDe, .T.  )
+	cInicio  := "SRA->RA_FILIAL + SRA->RA_MAT"
+	cFim     := cFilAte + cMatAte
+ElseIf nOrdem == 2
+	dbSeek( cFilDe + cCcDe + cMatDe, .T.  )
+	cInicio  := "SRA->RA_FILIAL + SRA->RA_CC + SRA->RA_MAT"
+	cFim     := cFilAte + cCcAte + cMatAte
+ElseIf nOrdem = 3
+	dbSeek(cFilDe + cCcDe + cNomDe, .T. )
+	cInicio  := "SRA->RA_FILIAL + SRA->RA_CC + SRA->RA_NOME"
+	cFim     := cFilAte + cCcAte + cNomAte
+ElseIf nOrdem = 4
+	dbSeek(cFilDe + cNomDe + cMatDe, .T. )
+	cInicio  := "SRA->RA_FILIAL + SRA->RA_NOME + SRA->RA_MAT"
+	cFim     := cFilAte + cNomAte + cMatAte
+Endif
+
+
+PrintOut(0,0,Avalimp(080),,)
+
+
+
+
+SetRegua(RecCount())
+
+While !Eof() .And.  &cInicio <= cFim
+
+    nLi:= 0
+
+
+
+
+	IncRegua()
+
+	If lEnd
+		PrintOut(_PROW()+1,0,cCancel,,)
+		Exit
+	Endif
+
+
+
+
+
+
+	If (SRA->RA_MAT < cMatDe) .Or.  (SRA->RA_MAT > cMatAte) .Or.  (SRA->RA_CC  < cCcDe ) .Or.  (SRA->RA_CC  > cCcAte) .Or.  (SRA->RA_NOME < cNomDe) .Or.  (SRA->RA_NOME > cNomAte)
+		SRA->(dbSkip(1))
+		Loop
+	EndIf
+
+
+
+
+
+
+   	If SRA->RA_SITFOLH $ "D" .AND.  nImprDem <> 1
+		SRA->(dbSkip(1))
+		Loop
+	Endif
+
+
+
+
+
+    If !( SRA->RA_FILIAL $ fValidFil() ) .Or.  !Eval( cAcessaSRA )
+		dbSelectArea("SRA")
+      	dbSkip()
+       	Loop
+	EndIF
+
+
+
+
+
+
+
+	DbSelectArea("SRF")
+	DbSetOrder(2)
+
+	cDeSRF := SRA->RA_FILIAL + SRA->RA_MAT + fGetCodFol("0072")
+	cAteSRF := SRA->RA_FILIAL + cMatAte + fGetCodFol("0072")
+
+	If DbSeek(cDeSRF)
+		While SRF->(!Eof() .and.  RF_FILIAL + RF_MAT + RF_PD == cDeSRF )
+			If SRF->RF_STATUS $ " 1" .and.  ( SRF->RF_DFERVAT > 0 .or.  SRF->RF_DFERAAT > 0 .or.  SRF->RF_DVENPEN > 0 )
+				If SRF->RF_DATAINI >= dDtfDe
+					dDtIniProg := SRF->RF_DATAINI
+					nDiasProg  := SRF->RF_DFEPRO1
+					nDAbProg   := SRF->RF_DABPRO1
+					nPercProg  := SRF->RF_PERC13S
+				ElseIf SRF->RF_DATINI2 >= dDtfDe
+					dDtIniProg := SRF->RF_DATINI2
+					nDiasProg  := SRF->RF_DFEPRO2
+					nDAbProg   := SRF->RF_DABPRO2
+					nPercProg  := SRF->RF_PERC13S
+				ElseIf SRF->RF_DATINI3 >= dDtfDe
+					dDtIniProg := SRF->RF_DATINI3
+					nDiasProg  := SRF->RF_DFEPRO3
+					nDAbProg   := SRF->RF_DABPRO3
+					nPercProg  := SRF->RF_PERC13S
+				EndIf
+				Exit
+			EndIf
+			SRF->(DbSkip())
+		EndDo
+	EndIf
+
+	cProcesso 	:= SRA->RA_PROCES
+	cTipoRot	:= "3"
+	cRot 		:= fGetCalcRot(cTipoRot)
+	cPeriodo	:= ""
+	cSemana		:= ""
+
+	If !Empty(dDtIniProg)
+		fRetPerComp(SubStr(Dtos(dDtIniProg),5,2), SubStr(Dtos(dDtIniProg),1,4),, cProcesso,cRot,@aPeriodo )
+		If Empty(aPeriodo) .or.  !Empty(aPeriodo[1,11])
+			dDtIniProg := CtoD("")
+		Else
+			cPeriodo := aPeriodo[1,1]
+			cSemana  := aPeriodo[1,2]
+		EndIf
+	EndIf
+
+
+
+
+
+
+	aPeriodo := {}
+
+
+
+
+	fTab_Fer(@aTabFer)
+
+	lAchou := .F. 
+	lImpAv := If(nAviso==1 .or.  nSolAb==1 .or.  nSol13==1, .T. , .F. )
+
+
+
+
+	dbSelectArea("SRH" )
+   	If dbSeek( SRA->RA_FILIAL + SRA->RA_MAT )
+   		aPeriodos := {}
+		While !Eof() .And.  SRA->RA_FILIAL + SRA->RA_MAT == SRH->RH_FILIAL + SRH->RH_MAT
+
+
+			If ( !(cPaisLoc $ "ANG") .And.  (SRH->RH_DATAINI >= dDtfDe .And.  SRH->RH_DATAINI <= dDtfAte) .And.  (SRH->RH_DTRECIB >= dDtPgDe .And.  SRH->RH_DTRECIB <= dDtPgAte) ) .OR.  ( (cPaisLoc $ "ANG") .And.  (SRH->RH_DTRECIB >= dDtPgDe .And.  SRH->RH_DTRECIB <= dDtPgAte) )
+				AAdd(aPeriodos, Recno() )
+			EndIf
+			dbSkip()
+		Enddo
+
+
+
+
+		If Len(aPeriodos) == 0
+			dbSelectArea( "SRA" )
+			If lImpAv
+			   FImprAvi(lTemCpoProg)
+			Endif
+			dbSelectArea( "SRA" )
+			dbSkip()
+			Loop
+		Endif
+
+		For nCnt := 1 To Len(aPeriodos)
+			dbSelectArea( "SRH" )
+			dbGoTo(aPeriodos[nCnt])
+
+
+
+
+			fInfo(@aInfo,SRA->RA_FILIAL)
+
+
+
+
+			If !FP_CODFOL(@aCodFol,SRA->RA_FILIAL)
+				Return
+			Endif
+
+			DaAuxI := SRH->RH_DATAINI
+			DaAuxF := SRH->RH_DATAFIM
+
+			If nRec13 == 1
+
+
+
+
+				cPd13o := aCodFol[22,1]
+
+
+
+				fBusCadBenef(@aCodBenef, "131", {aCodfol[172,1]})
+			Endif
+
+			If nRecAb == 1
+
+
+
+				aAdd(aVerbsAbo, aCodFol[74,1])
+				aAdd(aVerbsAbo, aCodFol[205,1])
+				aAdd(aVerbsAbo, aCodFol[617,1])
+				aAdd(aVerbsAbo, aCodFol[622,1])
+				aAdd(aVerbsAbo, aCodFol[623,1])
+
+				For i := 632 To 635
+					aAdd(aVerbsAbo, aCodFol[i,1])
+				Next
+
+
+
+				For i := 1312 To 1327
+					aAdd(aVerbsAbo, aCodFol[i,1])
+				Next
+
+				aAdd(aVerbsAbo, aCodFol[1330,1])
+				aAdd(aVerbsAbo, aCodFol[1331,1])
+
+				aAdd(aVerbs13Abo, aCodFol[79,1])
+				aAdd(aVerbs13Abo, aCodFol[206,1])
+
+			Endif
+
+	       lAchou := .T. 
+			For nImprVias := 1 to nVias
+				 ExecBlock("xIMPFER", .F. , .F. )
+			next
+			lImpAv := .F. 
+	    next
+    EndIf
+
+
+
+	If lImpAv
+	   FImprAvi(lTemCpoProg)
+	Endif
+
+	dbSelectArea("SRA")
+	dbSkip()
+Enddo
+
+
+
+
+dbSelectArea("SRA")
+dbClearFilter()
+dbsetorder(1)
+
+Set( 20, "SCREEN" )
+If aReturn[5] == 1
+	Set( 24, "" )
+	dbCommitAll()
+	ourspool(wnrel)
+Endif
+MS_FLUSH()
+
+
+Static Function FImprAvi(lTemCpoProg)
+
+Local dDtIniProg,nDiasAbono,nDiasFePro,nDiasDedFer
+Local nImprVias
+Local cQry		:= ""
+Local cData		:= dtos(dDtfDe)
+Local cData1	:= dTos(dDtfAte)
+Local nX		:= 1
+
+If nAviso==1 .or.  nSolAb==1 .or.  nSol13==1
+
+	aStruSRF  := If(Empty(aStruSRF),SRF->(dbStruct()),aStruSRF)
+
+	cQry := GetNextAlias()
+
+
+
+
+
+
+
+
+
+__execSql(cQry," SELECT * FROM  "+RetSqlName('SRF')+" SRF WHERE SRF.D_E_L_E_T_= ' ' AND RF_FILIAL=  "+___SQLGetValue(SRA->RA_FILIAL)+" AND RF_MAT= "+___SQLGetValue(SRA->RA_MAT)+" AND RF_STATUS= "+___SQLGetValue('1')+" AND ( (RF_DATAINI BETWEEN  "+___SQLGetValue(CDATA)+" AND  "+___SQLGetValue(CDATA1)+") OR (RF_DATINI2 BETWEEN  "+___SQLGetValue(CDATA)+" AND  "+___SQLGetValue(CDATA1)+") OR (RF_DATINI3 BETWEEN  "+___SQLGetValue(CDATA)+" AND  "+___SQLGetValue(CDATA1)+")) ORDER BY RF_DATABAS",{},.F.)
+	For nX := 1 To Len(aStruSRF)
+		If ( aStruSRF[nX][2] <> "C" )
+			TcSetField(cQry,aStruSRF[nX][1],aStruSRF[nX][2],aStruSRF[nX][3],aStruSRF[nX][4])
+		EndIf
+	next
+
+
+	If !(cQry)->(Eof())
+		dDtIniProg := CTOD("")
+		nDiasFePro := 0
+		nDiasAbono := 0
+		If (cQry)->RF_DATAINI >= dDtfDe .And.  (cQry)->RF_DATAINI <= dDtfAte
+			dDtIniProg := (cQry)->RF_DATAINI
+			nDiasFePro := If(lTemCpoProg, (cQry)->RF_DFEPRO1, 0)
+			nDiasAbono := If(lTemCpoProg, (cQry)->RF_DABPRO1, 0)
+		ElseIf lTemCpoProg
+			If (cQry)->RF_DATINI2 >= dDtfDe .And.  (cQry)->RF_DATINI2 <= dDtfAte
+				dDtIniProg := (cQry)->RF_DATINI2
+				nDiasFePro := (cQry)->RF_DFEPRO2
+				nDiasAbono := (cQry)->RF_DABPRO2
+			ElseIf (cQry)->RF_DATINI3 >= dDtfDe .And.  (cQry)->RF_DATINI3 <= dDtfAte
+				dDtIniProg := (cQry)->RF_DATINI3
+				nDiasFePro := (cQry)->RF_DFEPRO3
+				nDiasAbono := (cQry)->RF_DABPRO3
+			EndIf
+		EndIf
+		If !Empty(dDtIniProg)
+
+
+
+			fInfo(@aInfo,SRA->RA_FILIAL)
+			nDferven := nDferave := 0
+			If (cQry)->RF_DVENPEN > 0 .And.  !Empty((cQry)->RF_IVENPEN)
+		 		M->RH_DATABAS := (cQry)->RF_IVENPEN
+				M->RH_DBASEAT := (cQry)->RF_FVENPEN
+				nDferven       := (cQry)->RF_DVENPEN
+			Else
+		  		M->RH_DATABAS := (cQry)->RF_DATABAS
+				M->RH_DBASEAT := fCalcFimAq((cQry)->RF_DATABAS)
+				If nDiasFePro > 0
+					nDferven := nDiasFePro
+				Else
+
+					nDferven := (cQry)->RF_DFERVAT
+					nDferven := If (nDferVen <= 0,nDferave,nDferven)
+				EndIf
+			EndIf
+
+			nDiasAviso 		:= GetNewPar("MV_AVISFER",aTabFer[3])
+
+			If !empty((cQry)->RF_ABOPEC)
+				cAboPec := (cQry)->RF_ABOPEC
+			Else
+				cAboPec := cAboAnt
+			EndIf
+
+			M->RH_DTAVISO  := fVerData(dDtIniProg - (If (nDiasAviso > 0, nDiasAviso,aTabFer[3])))
+			M->RH_DFERIAS  := If( nDFerven > aTabFer[3] , aTabFer[3] , nDFerven )
+			M->RH_DTRECIB  := If(cAboPec=="1" .and.  nDiasAbono > 0,DataValida(DataValida((dDtIniProg-nDiasAbono)-1, .F. )-1, .F. ), DataValida(DataValida(dDtIniProg-1, .F. )-1, .F. ))
+			M->RF_TEMABPE  := (cQry)->RF_TEMABPE
+
+			If (cQry)->RF_TEMABPE == "S" .And.  !lTemCpoProg
+				M->RH_DFERIAS -= If(nDiasAbono > 0, nDiasAbono, 10)
+			Endif
+
+
+			If (cQry)->RF_DFERANT > 0
+				M->RH_DFERIAS := Min(M->RH_DFERIAS, aTabFer[3]-(cQry)->RF_DFERANT)
+			Endif
+
+
+			If (cQry)->RF_DFALVAT > 5
+				nDFaltaV:= (cQry)->RF_DFALVAT
+				TabFaltas(@nDFaltaV)
+
+				If (nDFaltaV > 0 .and.  nDiasAbono > 0 )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+					nDiasDedFer   := ( nDiasFePro - ( nDFaltaV - nDiasAbono ) )
+
+					If nDiasDedFer > 0
+						M->RH_DFERIAS := nDiasDedFer - NoRound( ( ( nDiasFePro + nDiasAbono ) - nDFaltaV ) / 3 )
+					Else
+						M->RH_DFERIAS -= (nDFaltaV)
+					EndIf
+
+				Else
+					M->RH_DFERIAS -= (nDFaltaV)
+				EndIf
+			Endif
+
+			DaAuxI := dDtIniProg
+			DaAuxF := dDtIniProg + M->RH_DFERIAS - 1
+
+			If M->RH_DFERIAS > 0
+				For nImprVias := 1 to nVias
+					ExecBlock("IMPFER", .F. , .F. )
+				Next
+			Endif
+		EndIf
+	Endif
+	(cQry)->(dbCloseArea())
+Endif
+
+Return

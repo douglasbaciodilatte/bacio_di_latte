@@ -1,0 +1,94 @@
+#INCLUDE "totvs.ch"
+
+/*/{Protheus.doc} User Function BDINVA01
+description)
+    @type  Function
+    @author user
+    @since 18/01/2021
+    @version version
+    @param param_name, param_type, param_descr
+    @return return_var, return_type, return_description
+    @example
+    (examples)
+    @see (links_or_references)
+    /*/
+
+User Function BDINVA01(_cFilial, _cLocal, lExec)
+
+	Local cQuery
+    Local c2Query
+
+    cQuery := "SELECT " + CRLF				
+	cQuery += " 	D1_LOCAL , " + CRLF
+	cQuery += " 	SUBSTRING(CTT.CTT_DESC01,11,30) AS 'CTT_DESC01', " + CRLF
+	cQuery += " 	D1_COD ,  " + CRLF
+	cQuery += " 	SB1.B1_DESC AS B1_DESC  " + CRLF
+
+	cQuery += " FROM "+RETSQLNAME("SD1")+" SD1 "  + CRLF
+	cQuery += " JOIN "+RETSQLNAME("SB1")+" SB1 ON SB1.B1_FILIAL = '' AND SB1.B1_COD = SD1.D1_COD AND SB1.D_E_L_E_T_ != '*' " + CRLF
+	cQuery += " JOIN "+RETSQLNAME("SF4")+" SF4 ON SF4.F4_FILIAL = '' AND SF4.F4_CODIGO = SD1.D1_TES AND SF4.D_E_L_E_T_ != '*' " + CRLF
+	cQuery += " JOIN "+RETSQLNAME("CTT")+" CTT ON CTT.CTT_FILIAL = '' AND CTT.CTT_CUSTO = SD1.D1_LOCAL AND CTT.D_E_L_E_T_ != '*' " + CRLF
+	cQuery += " WHERE SD1.D_E_L_E_T_ != '*' " + CRLF
+			
+	cQuery += " 	AND SF4.F4_ESTOQUE = 'S' " + CRLF
+	cQuery += " 	AND SB1.B1_GRUPO != '6020' " + CRLF
+	cQuery += " 	AND SB1.B1_TIPO NOT IN ('AI') " + CRLF
+	cQuery += " 	AND SB1.B1_TIPO NOT IN( 'VE', 'MC' ) " + CRLF
+	cQuery += " 	AND SD1.D1_FILIAL = '"+_cFilial+"' " + CRLF
+	cQuery += " 	AND SD1.D1_LOCAL = '"+_cLocal+"' " + CRLF
+
+	cQuery += " 	AND SD1.D1_EMISSAO BETWEEN '"+DTOS( DATE() - 90 )+"' AND '"+DTOS( DATE() )+"' " + CRLF
+
+	cQuery += " GROUP BY " + CRLF
+	cQuery += " 	D1_LOCAL, " + CRLF
+	cQuery += " 	CTT.CTT_DESC01, " + CRLF
+	cQuery += " 	D1_COD, " + CRLF 
+	cQuery += " 	SB1.B1_DESC " + CRLF
+	cQuery += " ORDER BY 1  " + CRLF
+
+    If lExec
+        dbUseArea(.T.,"TOPCONN",TcGenQry(,,cQuery),"TRB")
+        
+        Do While TRB->(!EOF())
+        
+            SB1->(DBSelectArea("SB1"))
+            SB1->(DBSetOrder(1))
+
+            If SB1->(DBSeek( xFilial("SB1") + TRB->D1_COD ))
+                RecLock("SB1",.F.)
+                    SB1->B1_XLISTA := "1"
+                SB1->(MsUnlock())
+            EndIf
+            
+            TRB->(dbSkip())	
+        Enddo	
+
+        TRB->(DbCloseArea())
+    EndIf
+
+    //Busca produtos do ultimo inventário
+
+    c2Query := " SELECT B7_COD FROM "+RETSQLNAME("SB7")+" WHERE B7_LOCAL = '"+_cLocal+"' AND SUBSTRING(B7_DATA ,1,6) = '"+SUBSTR( DTOS( DATE() - 30 ),1,6)+"' AND B7_QUANT != 0  AND D_E_L_E_T_ != '*' " 
+
+    If lExec
+
+        dbUseArea(.T.,"TOPCONN",TcGenQry(,,c2Query),"TRC")
+
+        Do While TRC->(!EOF())
+        
+            SB1->(DBSelectArea("SB1"))
+            SB1->(DBSetOrder(1))
+
+            If SB1->(DBSeek( xFilial("SB1") + TRC->B7_COD ))
+                RecLock("SB1",.F.)
+                    SB1->B1_XLISTA := "1"
+                SB1->(MsUnlock())
+            EndIf
+            
+            TRC->(dbSkip())	
+        Enddo	
+
+        TRC->(DbCloseArea())
+    EndIf
+
+Return (cQuery)

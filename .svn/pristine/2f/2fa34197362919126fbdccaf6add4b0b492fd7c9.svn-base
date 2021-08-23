@@ -1,0 +1,11 @@
+{  
+  "ConexaoSqlite": {
+    "SqliteConnectionString": "Data Source=Data.db",
+    "Logging": {
+      "LogLevel": {
+        "Default": "Warning"
+      }
+    },
+    "AllowedHosts": "*"
+  }
+}

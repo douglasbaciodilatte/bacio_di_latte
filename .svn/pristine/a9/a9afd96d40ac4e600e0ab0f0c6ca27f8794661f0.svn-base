@@ -1,0 +1,19 @@
+#include 'protheus.ch'
+#include 'parmtype.ch'
+#include 'totvs.ch'
+
+
+User Function MT311Leg
+
+Local oBrowse := PARAMIXB[1]
+
+
+    oBrowse:ALEGENDS[1][2]:ALEGEND := {}
+
+    oBrowse:AddLegend( "NNS_STATUS == '1'", "BLUE"		, 'Incluido' 	)//"Incluido"
+    oBrowse:AddLegend( "NNS_STATUS == '2'", "YELLOW"    , 'Em Transito' )//"Em Transito"
+    oBrowse:AddLegend( "NNS_STATUS == '5'", "GREEN"		, 'Recebido' 	)//"Recebido"
+    oBrowse:AddLegend( "NNS_STATUS == '6'", "RED"       , 'Rejeitado'   )//"Rejeitado"
+
+
+Return (oBrowse)

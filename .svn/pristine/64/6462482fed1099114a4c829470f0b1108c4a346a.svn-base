@@ -1,0 +1,42 @@
+
+//Bibliotecas
+#Include "Protheus.ch"
+#Include "TopConn.ch"
+#include "fileio.ch"
+
+/*/{Protheus.doc} User Function nomeFunction
+    (long_description)
+    @type  Function
+    @author user
+    @since 27/04/2021
+    @version version
+    @param param_name, param_type, param_descr
+    @return return_var, return_type, return_description
+    @example
+    (examples)
+    @see (links_or_references)
+    /*/
+
+User Function BLESTR20()
+
+    Local aParamBox := {}
+    Local aRet := {}
+    
+    aAdd(aParamBox,{1,"Emissão De"  ,Ctod(Space(8)),"","","","",50,.T.})
+	aAdd(aParamBox,{1,"Emissão Ate"  ,Ctod(Space(8)),"","","","",50,.T.})
+
+    If ParamBox(aParamBox,"Extrator Dados...",@aRet)
+
+        cQuery := CRLF + " SELECT SC6.C6_FILIAL, SC6.C6_NUM, SC6.C6_CLI, SC6.C6_LOJA, SA1.A1_NREDUZ, SB1.B1_COD, SB1.B1_DESC, SC6.C6_QTDVEN, SC6.C6_XQTDREF, SC6.C6_XLTREF, 'ITEM CORTADO' AS 'MOTIVO' "
+        cQuery += CRLF + " FROM "+RetSqlName('SC6')+"  SC6 "
+        cQuery += CRLF + " JOIN "+RetSqlName('SB1')+"  SB1 ON SB1.B1_FILIAL = '' AND SB1.B1_COD = SC6.C6_PRODUTO AND SB1.D_E_L_E_T_ != '*' "
+        cQuery += CRLF + " LEFT JOIN "+RetSqlName('SA1')+"  SA1 ON SA1.A1_FILIAL = '' AND SA1.A1_COD = SC6.C6_CLI AND SA1.A1_LOJA = SC6.C6_LOJA AND SA1.D_E_L_E_T_ != '*'  "
+        cQuery += CRLF + " 		INNER JOIN "+RetSqlName('SC5')+" SC5 ON C6_FILIAL=C5_FILIAL AND C5_NUM=C6_NUM  "
+        cQuery += CRLF + " 			AND C5_CLIENTE=C6_CLI AND C5_LOJACLI=C6_LOJA AND C6_NOTA='' AND SC6.D_E_L_E_T_='' "
+        cQuery += CRLF + " WHERE C5_EMISSAO BETWEEN '"+Dtos(MV_PAR01)+"' AND '"+Dtos(MV_PAR02)+"' AND C5_NOTA = '' AND C5_FILIAL = '0072' "
+
+        U_QRYCSV(cQuery,"Corte Pedidos SM")
+
+    EndIf    
+
+Return

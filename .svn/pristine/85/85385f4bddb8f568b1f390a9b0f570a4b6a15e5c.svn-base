@@ -1,0 +1,187 @@
+#Include "Totvs.ch"
+
+/*/{Protheus.doc} User Function BDLML006
+    (long_description)
+    @type  Function
+    @author Douglas Silva
+    @since 09/12/2020
+    @version 2.1
+	@update Felipe Mayer 02/06/2021 - Grupo de venda nas consultas
+    /*/
+
+User Function BDLML006()
+    
+    Local aParamBox := {}
+	Local aCombo := {"Pedidos em Aberto","Notas Faturamento"}
+	Private aRet := {}
+
+	aAdd(aParamBox,{2,"Tabela",2,aCombo,90,"",.T.})	//01
+    aAdd(aParamBox,{1,"Filial",Space(4),"","","NNR","",0,.F.}) // 02
+
+	aAdd(aParamBox,{1,"Emissão De" ,Ctod(Space(8)),"","","","",50,.F.}) //03
+	aAdd(aParamBox,{1,"Emissão Ate",Ctod(Space(8)),"","","","",50,.F.}) //04
+	
+	
+	If ParamBox(aParamBox,"Relatório Faturamento SM...",@aRet)
+	
+		If ( ValType( aRet [1] ) == "N" .And. aRet [1] == 1 ) .Or.  ( ValType( aRet [1] ) == "C" .And. aRet [1] == "Pedidos em Aberto" )
+			xProc1()
+		ElseIf ( ValType( aRet [1] ) == "N" .And. aRet [1] == 2 ) .Or.  ( ValType( aRet [1] ) == "C" .And. aRet [1] == "Notas Faturamento" )
+			xProc2()							
+		EndIf
+	  
+	Endif
+
+Return 
+
+Static Function xProc1()
+
+	cQuery := CRLF + " SELECT A1_COD, A1_LOJA, A1_NOME, A1_NREDUZ, SC6.C6_NUM, SC6.C6_NUM, "
+	cQuery += CRLF + "		SUBSTRING(SC6.C6_ENTREG,7,2) + '/' + SUBSTRING(SC6.C6_ENTREG ,5,2) + '/' + SUBSTRING(SC6.C6_ENTREG ,1,4) "
+	cQuery += CRLF + "		C6_ENTREG, SC6.C6_PRODUTO, SB1.B1_DESC, SC6.C6_PRCVEN, SC6.C6_QTDVEN, SC6.C6_VALOR , "
+	cQuery += CRLF + "		ISNULL(A1_GRPVEN,'') GRUPO_VEND,ISNULL(ACY_DESCRI,'') DESC_GPVEND "
+	cQuery += CRLF + " FROM "+RETSQLNAME("SA1")+" SA1 "
+	cQuery += CRLF + " JOIN "+RETSQLNAME("SC6")+" SC6 ON  SC6.C6_FILIAL = '"+MV_PAR02+"' " 
+	cQuery += CRLF + "		AND SC6.C6_CLI = SA1.A1_COD "
+	cQuery += CRLF + "		AND SC6.C6_LOJA = SA1.A1_LOJA "
+	cQuery += CRLF + "		AND SC6.C6_NOTA = '' "
+	cQuery += CRLF + "		AND SC6.D_E_L_E_T_ != '*'  "
+	cQuery += CRLF + " JOIN "+RETSQLNAME("SB1")+" SB1 ON  SB1.B1_FILIAL = '"+xFilial('SB1')+"'  "
+	cQuery += CRLF + "		AND SB1.B1_COD = SC6.C6_PRODUTO  "
+	cQuery += CRLF + "		AND SB1.D_E_L_E_T_ != '*' "
+	cQuery += CRLF + " LEFT JOIN "+RETSQLNAME("ACY")+" ACY ON ACY_FILIAL='"+xFilial('ACY')+"' "
+	cQuery += CRLF + "		AND ACY_GRPVEN=A1_GRPVEN "
+	cQuery += CRLF + " WHERE SA1.D_E_L_E_T_ != '*'  "
+	cQuery += CRLF + " ORDER BY 1,2 "
+
+	U_QRYCSV(cQuery,"Pedidos em Aberto")
+
+Return
+
+Static Function xProc2()
+
+	cQuery := " Select  A1_COD, A1_LOJA, A1_NOME  , A1_NREDUZ  , A1_END    , A1_BAIRRO , A1_MUN , A1_EST, " + CRLF
+	cQuery += " 		DIAA  , MESS   , ANOO     , Tipo       , D2_FILIAL , D2_PEDIDO , D2_DOC , D2_SERIE, D2_ITEM, " + CRLF 
+	cQuery += " 		D2_COD,B1_DESC , D2_PRCVEN, D2_QUANT   , D2_TOTAL  , D2_VALBRUT, TB.Quant_Origem, " + CRLF
+	cQuery += " 		Valor_Original , Dt_Dev   , Doc_Dev    ,Serie_Dev  ,Item_Dev, D2_LOTECTL , D2_DTVALID,
+	cQuery += " 		ISNULL(A1_GRPVEN,'') GRUPO_VEND,ISNULL(ACY_DESCRI,'') DESC_GPVEND
+				
+	cQuery += " from ( " + CRLF
+	cQuery += " 	SELECT " + CRLF
+	cQuery += " 		SD1.D1_FORNECE AS D2_CLIENTE, " + CRLF
+	cQuery += " 		SD1.D1_LOJA AS D2_LOJA, " + CRLF
+	cQuery += " 		SUBSTRING(SD1.D1_EMISSAO,7,2) 'DIAA' , " + CRLF
+	cQuery += " 		SUBSTRING(SD1.D1_EMISSAO,5,2) 'MESS' , " + CRLF
+	cQuery += " 		SUBSTRING(SD1.D1_EMISSAO,1,4) 'ANOO' , " + CRLF
+	cQuery += " 		'Devolucao' AS Tipo, " + CRLF
+	cQuery += " 		SD2.D2_FILIAL, " + CRLF
+	cQuery += " 		SD2.D2_PEDIDO, " + CRLF
+	cQuery += " 		SD2.D2_DOC , " + CRLF
+	cQuery += " 		SD2.D2_SERIE,  " + CRLF
+	cQuery += " 		SD2.D2_ITEM ,  " + CRLF
+	cQuery += " 		SD2.D2_COD,   " + CRLF
+	cQuery += " 		SD2.D2_PRCVEN, " + CRLF
+	cQuery += " 		(SD2.D2_QUANT* (-1)) D2_QUANT, " + CRLF
+	cQuery += " 		(SD1.D1_TOTAL + SD1.D1_VALIPI + SD1.D1_ICMSRET) AS D2_TOTAL, " + CRLF
+	cQuery += " 		(SD1.D1_TOTAL + SD1.D1_VALIPI + SD1.D1_ICMSRET) AS D2_VALBRUT,  " + CRLF
+	cQuery += " 		ISNULL(SD2.D2_QUANT  ,0  ) AS 'Quant_Origem', " + CRLF
+	cQuery += " 		ISNULL(SD2.D2_VALBRUT,0  ) As 'Valor_Original', " + CRLF
+	cQuery += " 		ISNULL(SD1.D1_EMISSAO, '') AS 'Dt_Dev', " + CRLF
+	cQuery += " 		ISNULL(SD1.D1_DOC    , '') AS 'Doc_Dev', " + CRLF
+	cQuery += " 		ISNULL(SD1.D1_SERIE  , '') As 'Serie_Dev', " + CRLF
+	cQuery += " 		ISNULL(SD1.D1_ITEM   , '') As 'Item_Dev', " + CRLF
+	cQuery += " 		SD2.D2_LOTECTL, " + CRLF
+	cQuery += " 		D2_DTVALID " + CRLF
+					
+	cQuery += " 	FROM " + RetSqlName("SD1") + " SD1   " + CRLF
+		
+	cQuery += " 		INNER JOIN " + RetSqlName("SD2") + " SD2 ON  " + CRLF
+	cQuery += " 			SD1.D1_FILIAL      = SD2.D2_FILIAL  " + CRLF
+	cQuery += " 			AND SD1.D1_COD     = SD2.D2_COD  " + CRLF
+	cQuery += " 			AND SD1.D1_NFORI   = SD2.D2_DOC  " + CRLF
+	cQuery += " 			AND SD1.D1_SERIORI = SD2.D2_SERIE  " + CRLF
+	cQuery += " 			AND SD1.D1_FORNECE = SD2.D2_CLIENTE  " + CRLF
+	cQuery += " 			AND SD1.D1_LOJA    = SD2.D2_LOJA  " + CRLF
+	cQuery += " 			AND SD2.D2_ITEM    = SD1.D1_ITEMORI " + CRLF
+	cQuery += " 			AND SD2.D_E_L_E_T_ != '*'  " + CRLF
+
+	cQuery += " 		INNER JOIN " + RetSqlName("SF4") + " SF4 ON  " + CRLF
+	cQuery += " 			SF4.F4_FILIAL      = '" + xFilial("SF4") + "'  " + CRLF
+	cQuery += " 			AND SF4.F4_CODIGO  = SD2.D2_TES  " + CRLF
+	cQuery += " 			AND SF4.D_E_L_E_T_ != '*'  " + CRLF
+	cQuery += " 			AND SF4.F4_DUPLIC  = 'S'  " + CRLF
+				
+	cQuery += " 	WHERE  " + CRLF
+	cQuery += " 			SD2.D2_FILIAL  = '" + xFilial("SD2") + "'  " + CRLF
+	cQuery += " 		AND SD2.D2_TIPO    = 'N'  " + CRLF
+	cQuery += " 		AND SD2.D_E_L_E_T_ != '*' " + CRLF
+	cQuery += " 		AND SD1.D1_TIPO     = 'D' " + CRLF
+	cQuery += " 		AND SD1.D1_DTDIGIT  BETWEEN '" + DTOS(MV_PAR03) + "' AND '" + DTOS(MV_PAR04) + "' " + CRLF
+	
+	cQuery += " 	union " + CRLF
+		
+	cQuery += " 	SELECT   " + CRLF
+	cQuery += " 		D2_CLIENTE, " + CRLF
+	cQuery += " 		D2_LOJA, " + CRLF
+	cQuery += " 		SUBSTRING(SD2.D2_EMISSAO,7,2) 'DIAA' ,   " + CRLF
+	cQuery += " 		SUBSTRING(SD2.D2_EMISSAO,5,2) 'MESS' ,   " + CRLF
+	cQuery += " 		SUBSTRING(SD2.D2_EMISSAO,1,4) 'ANOO' ,   " + CRLF
+	cQuery += " 		CASE WHEN substring(F4_CF,2,3) = '910'  " + CRLF
+	cQuery += " 			THEN 'Bonificacao'  " + CRLF
+	cQuery += " 			ELSE 'Venda'   " + CRLF
+	cQuery += " 		END AS Tipo, " + CRLF
+	cQuery += " 		SD2.D2_FILIAL, " + CRLF
+	cQuery += " 		SD2.D2_PEDIDO, " + CRLF
+	cQuery += " 		SD2.D2_DOC, " + CRLF
+	cQuery += " 		SD2.D2_SERIE,  " + CRLF
+	cQuery += " 		SD2.D2_ITEM,  " + CRLF
+	cQuery += " 		SD2.D2_COD, " + CRLF
+	cQuery += " 		SD2.D2_PRCVEN, " + CRLF
+	cQuery += " 		SD2.D2_QUANT, " + CRLF
+	cQuery += " 		SD2.D2_TOTAL, " + CRLF
+	cQuery += " 		SD2.D2_VALBRUT,  " + CRLF
+	cQuery += " 		0 AS 'Quant_Origem', " + CRLF
+	cQuery += " 		0 AS 'Valor_Original', " + CRLF
+	cQuery += " 		'        '  AS 'Dt_Dev', " + CRLF
+	cQuery += " 		'        '  AS 'Doc_Dev',  " + CRLF
+	cQuery += " 		' '         AS 'Serie_Dev',  " + CRLF
+	cQuery += " 		' '         AS 'Item_Dev',  " + CRLF
+	cQuery += " 		SD2.D2_LOTECTL, " + CRLF
+	cQuery += " 		SD2.D2_DTVALID " + CRLF
+					
+	cQuery += " 	FROM " + RetSqlName("SD2") + " SD2 " + CRLF
+
+	cQuery += " 		JOIN " + RetSqlName("SF4") + " SF4 " + CRLF
+	cQuery += " 			ON  SF4.F4_FILIAL   = '" + xFilial("SF4") + "'  " + CRLF
+	cQuery += " 			AND SF4.F4_CODIGO   = SD2.D2_TES  " + CRLF
+	cQuery += " 			AND SF4.D_E_L_E_T_ != '*'  " + CRLF
+	cQuery += " 			AND (SF4.F4_DUPLIC  = 'S' OR F4_CF in ('5910','6910'))  " + CRLF
+
+	cQuery += " 	WHERE" + CRLF
+	cQuery += "   		    SD2.D2_FILIAL   = '" + MV_PAR02 + "'  " + CRLF
+	cQuery += " 		AND SD2.D2_TIPO     = 'N' " + CRLF
+	cQuery += " 		AND SD2.D_E_L_E_T_ != '*' " + CRLF
+	cQuery += " 		AND SD2.D2_EMISSAO  BETWEEN '" + DTOS(MV_PAR03) + "' AND '" + DTOS(MV_PAR04) + "' " + CRLF
+
+	cQuery += " ) as TB " + CRLF
+
+	cQuery += " 	JOIN " + RetSqlName("SA1") + " SA1 " + CRLF
+	cQuery += " 		ON SA1.A1_FILIAL   = '" + xFilial("SA1") + "' " + CRLF
+	cQuery += " 		AND SA1.A1_COD     = D2_CLIENTE " + CRLF
+	cQuery += " 		AND SA1.A1_LOJA    = D2_LOJA  " + CRLF
+	cQuery += " 		AND SA1.D_E_L_E_T_ <> '*'  " + CRLF
+
+	cQuery += " 	JOIN " + RetSqlName("SB1") + " SB1  " + CRLF
+	cQuery += " 		ON  B1_COD    = D2_COD " + CRLF
+	cQuery += " 		AND B1_FILIAL = '" + xFilial("SB1") + "' "  + CRLF
+
+	cQuery += " LEFT JOIN "+RetSqlName("ACY")+" ACY ON " + CRLF
+	cQuery += " 	ACY_FILIAL='"+xFilial('ACY')+"' " + CRLF
+	cQuery += "		AND ACY_GRPVEN=A1_GRPVEN " + CRLF
+
+	cQuery += " ORDER BY 5,6,7 " + CRLF
+
+   	//Chamada função para gerar em Excel
+	U_QRYCSV(cQuery,"Notas Faturamento")
+
+Return

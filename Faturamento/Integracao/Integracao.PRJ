@@ -1,0 +1,35 @@
+Group bacio
+   Version=7.0
+   VSSDB=
+   HasProperties=1
+   Properties
+      BeforeApply=
+      AfterApply=
+      Icon=
+      ID=
+      Version=
+      PalmName=
+      OutPut=
+   End
+   ProjectsCount=1
+   Project Novo Projeto
+      FoldersCount=2
+      Folder Fontes
+         VSSPath=Fontes
+         FilesCount=0
+      End
+      Folder Definições
+         VSSPath=Definições
+         FilesCount=3
+         File \RVACARI\BL\Rdmake\BacioDiLatte\Faturamento\Integracao\fwimppio.prw
+             Type=T
+         End
+         File \RVACARI\BL\Rdmake\BacioDiLatte\Faturamento\Integracao\fwimppip.prw
+             Type=T
+         End
+         File \RVACARI\BL\Rdmake\BacioDiLatte\Faturamento\Integracao\fwImpSales.prw
+             Type=T
+         End
+      End
+   End
+End

@@ -1,0 +1,141 @@
+#INCLUDE "Protheus.ch"
+#INCLUDE "TBICONN.CH"
+#INCLUDE "TopConn.ch"
+
+/*/{Protheus.doc} User Function BDINVIMP
+    (long_description)
+    @type  Function
+    @author user
+    @since 10/04/2020
+    @version version
+    @param param_name, param_type, param_descr
+    @return return_var, return_type, return_description
+    @example
+    (examples)
+    @see (links_or_references)
+    /*/
+User Function BDINVIMP()
+
+    Local aPergs 	 := {}
+    Local cCaminho  := Space(90)
+    Local aRet      := {}
+
+    aAdd( aPergs ,{6,"Diretorio do Arquivo?"	,cCaminho	,"@!",,'.T.',80,.F.,"Arquivos .csv |*.csv " }) 
+    aAdd( aPergs, {1,"Data Inventario?"			,Ctod(Space(8)),"","","","",50,.F.})
+    aAdd( aPergs, {1,"Filial"  			        ,Space(4),"","","SM0","",50,.F.})
+    aAdd( aPergs, {1,"Armazem" 			        ,Space(6),"","","NNR","",50,.F.})
+
+    If ParamBox(aPergs ,"Parametros ",aRet)
+        processa( {|| ImporCSV(MV_PAR01) } ,'Aguarde Efetuando Importacao da Planilha' )
+    EndIf
+
+RETURN
+
+/*/{Protheus.doc} ImporCSV()
+
+   (long_description)
+    @type  Function
+    @author user
+    @since date
+    @version version
+    @param param, param_type, param_descr
+    @return return, return_type, return_description
+    @example
+    (examples)
+    @see (links_or_references)
+    /*/
+
+Static Function ImporCSV(cFile)
+
+    Local cLinha
+    Local lPrim     := .T.
+    Local aCampos   := {}
+    Local aDados    := {}
+    Local _cNumLote := ""
+
+   	If ! Empty(cFile) 
+
+		FT_FUSE(cFile)
+		ProcRegua(FT_FLASTREC())
+		FT_FGOTOP()
+		While !FT_FEOF()
+			
+			IncProc("Selecionando Registros...")
+	 
+			cLinha := FT_FREADLN()
+			
+			If lPrim
+				aCampos := Separa(cLinha,";",.T.)
+				lPrim := .F.
+			Else
+				AADD(aDados,Separa(cLinha,";",.T.))
+							
+			EndIf
+			
+			FT_FSKIP()
+		EndDo
+
+    EndIf
+
+
+     //Efetua leitura dos dados
+    ProcRegua( Len(aDados) )
+    Begin Transaction
+        For i := 1 to Len(aDados) //Leitura do Array importa��o dos dados
+            
+            //Busca cadastro de produtos
+            SB1->(dbSelectArea("SB1"))
+            SB1->(dbSetOrder(1))
+            SB1->(dbSeek(xFilial("SB1") + Alltrim(aDados[i][3])))
+
+            //IncProc("Importando dados tabela SB7...")
+            
+            SB7->(dbSelectArea("SB7"))
+            SB7->(dbSetOrder(1)) //B7_FILIAL, B7_NUMLOTE, B7_LOTECTL, B7_COD, B7_LOCAL, B7_LOCALIZ, B7_NUMSERI, B7_IDUNIT, B7_DATA, R_E_C_N_O_, D_E_L_E_T_
+            /*
+            If SB1->B1_RASTRO == "L"
+                 _cNumLote := PadR(aDados[i][6], tamsx3('B7_LOTECTL') [1])
+            Else
+                _cNumLote := PadR("", tamsx3('B7_LOTECTL') [1])
+            EndIf    
+            */
+            If ! SB7->(dbSeek(MV_PAR03 + DTOS(MV_PAR02) + SB1->B1_COD + MV_PAR04 + SB7->B7_LOCALIZ + SB7->B7_NUMSERI + _cNumLote ))
+            //If !  SB7->(dbSeek(MV_PAR03 + SB7->B7_NUMLOTE + PadR(aDados[i][6], tamsx3('B7_LOTECTL') [1]) + SB1->B1_COD + MV_PAR04 + SB7->B7_NUMSERI + SB7->B7_IDUNIT + DTOS(MV_PAR02)))
+                   
+                RecLock("SB7", .T.)
+
+                    SB7->B7_FILIAL  := MV_PAR03
+                    SB7->B7_COD     := Alltrim(aDados[i][3])
+                    SB7->B7_LOCAL   := MV_PAR04
+                    SB7->B7_TIPO    := SB1->B1_TIPO
+                    SB7->B7_DOC     := DTOS(MV_PAR02)+"Z"
+
+                
+                    SB7->B7_QUANT   := VAL( STRTRAN(aDados[i][4],",",".") )
+                    SB7->B7_QTSEGUM := ConvUm(SB1->B1_COD, VAL( STRTRAN(aDados[i][4],",",".") ),0,2)
+                
+                    SB7->B7_DATA    := MV_PAR02
+                    SB7->B7_ORIGEM  := "BDINVIMP"
+                    SB7->B7_STATUS  := "1"
+                    /*
+                    If SB1->B1_RASTRO == "L"
+                    
+                        SB7->B7_LOTECTL := _cNumLote
+                        SB7->B7_DTVALID := IIF( EMPTY( aDados[i][7] ), DATE() + 30, CTOD(aDados[i][7]) )
+
+                    EndIf    
+                    */    
+                MsUnLock() 
+            Else
+                RecLock("SB7", .F.)
+                                        
+                    SB7->B7_QUANT   := VAL( STRTRAN(aDados[i][4],",",".") )
+                    SB7->B7_QTSEGUM := ConvUm(SB1->B1_COD, VAL( STRTRAN(aDados[i][4],",",".") ),0,2)
+                    
+                MsUnLock() 
+            Endif    
+               
+        Next i
+    End Transaction   
+
+Return 

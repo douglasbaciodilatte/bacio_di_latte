@@ -1,0 +1,1222 @@
+#line 1 "c:/TOTVS/INCLUDES\protheus.ch"
+#line 1 "c:/TOTVS/INCLUDES\dialog.ch"
+#line 28 "protheus.ch"
+#line 1 "c:/TOTVS/INCLUDES\font.ch"
+#line 29 "protheus.ch"
+#line 1 "c:/TOTVS/INCLUDES\ptmenu.ch"
+#line 31 "protheus.ch"
+#line 1 "c:/TOTVS/INCLUDES\print.ch"
+#line 33 "protheus.ch"
+#line 1 "c:/TOTVS/INCLUDES\colors.ch"
+#line 35 "protheus.ch"
+#line 1 "c:/TOTVS/INCLUDES\folder.ch"
+#line 37 "protheus.ch"
+#line 1 "c:/TOTVS/INCLUDES\msobject.ch"
+#line 38 "protheus.ch"
+#line 1 "c:/TOTVS/INCLUDES\vkey.ch"
+#line 42 "protheus.ch"
+#line 1 "c:/TOTVS/INCLUDES\winapi.ch"
+#line 44 "protheus.ch"
+#line 1 "c:/TOTVS/INCLUDES\fwcommand.ch"
+#line 47 "protheus.ch"
+#line 1 "c:/TOTVS/INCLUDES\fwcss.ch"
+#line 50 "protheus.ch"
+#line 2 "c:\Users\dougl\Documents\TDS\Bacio_Di_Latte\Bacio di Latte\RH\Relatorios\Recibo_de_Ferias\\c:/Users/dougl/Documents/TDS/Bacio_Di_Latte/Bacio di Latte/RH/Relatorios/Recibo_de_Ferias/xIMPFER.prw"
+#line 1 "c:/TOTVS/INCLUDES\IMPFER.CH"
+#line 17 "c:\Users\dougl\Documents\TDS\Bacio_Di_Latte\Bacio di Latte\RH\Relatorios\Recibo_de_Ferias\\c:/Users/dougl/Documents/TDS/Bacio_Di_Latte/Bacio di Latte/RH/Relatorios/Recibo_de_Ferias/xIMPFER.prw"
+Function U_xIMPFER()
+
+Local cLinAtu		:= ""
+Local nCntCd		:= 0
+Local nConta		:= 0
+Local nDiaFeQueb 	:= 0
+Local i             := 0
+Local ni            := 0
+Local aGozoFer      := {}
+Local dDataRet      := CTOD("//")
+Local cDiasFMes		:= ""
+Local cDiasFMesSeg  := ""
+Local cDiasAbMes	:= ""
+Local cDiasAbMSeg	:= ""
+Local cLiqReceber	:= ""
+
+
+Local nLenCRet2	:= ""
+
+Local nTamNomEmpresa := ""
+
+Local nTamSpaco	:= ""
+Local lDepto
+
+
+
+
+
+
+
+
+SetPrvt("CREPLIC77,CREPLIC22,CREPLIC30,CREPLIC33,CREPLIC35,CREPLIC40")
+SetPrvt("N1PARC,NABONO,N13ABONO,CDESC,CLINHA,NLI")
+SetPrvt("NVALAB13,NVALAB,NVAL13O,NVAL13A,NPEN13O,NVALNLIQ,CRET1")
+SetPrvt("CRET2,CABONO,CEXT,APDV,APDD,PER_AQ_I")
+SetPrvt("PER_AQ_F,PER_GO_I,PER_GO_F,NMAXIMO,NTVD,DET")
+SetPrvt("NTVP")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+cReplic77:= REPLICATE("-",77)
+cReplic22:= REPLICATE("_",22)
+cReplic30:= REPLICATE("_",30)
+cReplic33:= REPLICATE("_",33)
+cReplic35:= REPLICATE("_",35)
+cReplic40:= REPLICATE("_",40)
+
+
+
+
+If lAchou
+
+	dDtBusFer := SRH->RH_DATAINI
+
+
+
+
+
+	If SRH->( RH_DIALRE1 + RH_DIALREM) > 0
+		nDiaFeQueb := SRH->(RH_DFERIAS - Int(RH_DFERIAS) )
+		DaAuxF 	   := SRH->RH_DATAFIM -( SRH->( RH_DIALRE1 + RH_DIALREM ) ) + If(nDiaFeQueb>0 , 1, 0 )
+    EndIf
+
+    IF cPaisLoc == "ANG"
+	    aGozoFer := fBusGozo( SRH->RH_DATABAS , SRH->RH_DBASEAT )
+	    IF len(aGozoFer) > 0
+		    dDataRet := Dtoc(aGozoFer[len(aGozoFer)][2]+1)
+		    DAAUXI   := aGozoFer[1][1]
+		    DAAUXF   := aGozoFer[1][2]
+		Else
+			dDataRet := Dtoc(ctod("//"))
+			DAAUXI   := ctod("//")
+			DAAUXF   := ctod("//")
+		Endif
+	Endif
+
+
+
+
+
+    PER_AQ_I := STRZERO(DAY(SRH->RH_DATABASE),2)+" De "+MesExtenso(MONTH(SRH->RH_DATABAS))+" De "+STR(YEAR(SRH->RH_DATABAS),4)
+    PER_AQ_F := STRZERO(DAY(SRH->RH_DBASEATE),2)+" De "+MesExtenso(MONTH(SRH->RH_DBASEAT))+" De "+STR(YEAR(SRH->RH_DBASEAT),4)
+    PER_GO_I := STRZERO(DAY(DAAUXI),2)+" De "+MesExtenso(MONTH(DAAUXI))+" De "+STR(YEAR(DAAUXI),4)
+    PER_GO_F := STRZERO(DAY(DAAUXF),2)+" De "+MesExtenso(MONTH(DAAUXF))+" De "+STR(YEAR(DAAUXF),4)
+
+    PrintOut(nLi+01,001,"*"+cReplic77+"*",,)
+    PrintOut(nLi+02,001,"|"+SPACE(18)+"      AVISO DE CONCESSAO DE FERIAS        "+SPACE(17)+"|",,)
+    PrintOut(nLi+03,001,"|"+SPACE(18)+" ======================================== "+SPACE(17)+"|",,)
+    PrintOut(nLi+04,001,"|"+SPACE(77)+"|",,)
+    PrintOut(nLi+05,001,"|"+SPACE(02)+"Empresa:   "+SubStr(aInfo[3]+Space(40),1,40)+Space(23)+" |",,)
+    PrintOut(nLi+06,001,"|"+SPACE(02)+"Estabelecida a "+SubStr(aInfo[4]+Space(30),1,30)+"   -  Cep: "+SubStr(aInfo[7]+Space(8),1,8)+"           |",,)
+    PrintOut(nLi+07,001,"|"+SPACE(02)+"Cidade: "+SubStr(aInfo[5]+Space(25),1,25)+"   -     UF: "+aInfo[6]+" CNPJ "+TRANSFORM(aInfo[8],"@R 99.999.999/9999-99")+Space(3)+"|",,)
+    PrintOut(nLi+08,001,"|"+SPACE(02)+"Empregado "+SUBSTR(SRA->RA_NOME,1,30)+" CTPS "+SRA->RA_NUMCP+"SERIE "+SRA->RA_SERCP+"           |",,)
+    PrintOut(nLi+09,001,"|"+SPACE(77)+"|",,)
+
+    PrintOut(nLi+10,001,"|"+SPACE(02)+UPPER("por este instrumento particular, as partes convencionam e se comprometem a ")+"|",,)
+    PrintOut(nLi+11,001,"|"+SPACE(02)+UPPER("seguir o seguinte:")+SPACE(57)+"|",,)
+    PrintOut(nLi+12,001,"|"+SPACE(77)+"|",,)
+
+    PrintOut(nLi+13,001,"|"+SPACE(02)+UPPER("Considerando que a disseminacao do COVID 19 Coronavirus, ja declarada pela ")+"|",,)
+    PrintOut(nLi+14,001,"|"+SPACE(02)+UPPER("Organizacao Mundial da Saude  OMS  como uma pandemia de proporcao mundial, ")+"|",,)
+    PrintOut(nLi+15,001,"|"+SPACE(02)+UPPER("requer medidas de prevencao sanitaria, inclusive isolamentos e quarentenas ")+"|",,)
+    PrintOut(nLi+16,001,"|"+SPACE(02)+UPPER("diminuicao do transito de pessoas, etc.                                    ")+"|",,)
+    PrintOut(nLi+17,001,"|"+SPACE(02)+UPPER("com intuito de contencao da propagacao do virus                            ")+"|",,)
+    PrintOut(nLi+18,001,"|"+SPACE(77)+"|",,)
+
+    PrintOut(nLi+19,001,"|"+SPACE(02)+UPPER("Considerando que, para alem das questoes sanitarias e de saude,            ")+"|",,)
+    PrintOut(nLi+20,001,"|"+SPACE(02)+UPPER("a disseminacao do COVID 19 Coronavirus vem afetando gradualmente a economia")+"|",,)
+    PrintOut(nLi+21,001,"|"+SPACE(02)+UPPER("mundial e local, notadamente no setor de bares, restaurantes e afins       ")+"|",,)
+    PrintOut(nLi+22,001,"|"+SPACE(77)+"|",,)
+
+    PrintOut(nLi+23,001,"|"+SPACE(02)+UPPER("Considerando que o EMPREGADOR atua no ramo de servicos de alimentacao      ")+"|",,)
+    PrintOut(nLi+24,001,"|"+SPACE(02)+UPPER("restaurante e, por isso esta sendo drasticamente afetado pela crise        ")+"|",,)
+    PrintOut(nLi+25,001,"|"+SPACE(02)+UPPER("mundial no setor comercial de bares, restaurantes e afins                  ")+"|",,)
+    PrintOut(nLi+26,001,"|"+SPACE(77)+"|",,)
+
+    PrintOut(nLi+27,001,"|"+SPACE(02)+UPPER("Considerando, ainda, que no dia 22/03/2020 foi publicada a Media Provisoria")+"|",,)
+    PrintOut(nLi+28,001,"|"+SPACE(02)+UPPER("927/2020 que, em seu artigo 6, 2, permite a antecipacao de ferias          ")+"|",,)
+    PrintOut(nLi+29,001,"|"+SPACE(77)+"|",,)
+
+    PrintOut(nLi+30,001,"|"+SPACE(02)+UPPER("Considerando, os termos do art 130 da CLT e Clausula 4, alinea (a) cumulada")+"|",,)
+    PrintOut(nLi+31,001,"|"+SPACE(02)+UPPER("com a clausula 5 do Termo Aditivo Convencao Coletiva de Trabalho 2019/2021 ")+"|",,)
+    PrintOut(nLi+32,001,"|"+SPACE(02)+UPPER("para as bases sindicais abrangidas pelo Sinthoresp e pelo Sindifast        ")+"|",,)
+    PrintOut(nLi+33,001,"|"+SPACE(77)+"|",,)
+
+    PrintOut(nLi+34,001,"|"+SPACE(02)+UPPER("RESOLVEM                                                                   ")+"|",,)
+    PrintOut(nLi+35,001,"|"+SPACE(02)+UPPER("1 A empresa concedera ferias de 10 dias, referente ao periodo aquisitivo de")+"|",,)
+    PrintOut(nLi+36,001,"|"+SPACE(02)+PER_AQ_I+" A "+PER_AQ_F+SPACE(32)+"|",,)
+    PrintOut(nLi+37,001,"|"+SPACE(02)+UPPER("2 As ferias serao usufruidas no periodo entre                              ")+"|",,)
+    PrintOut(nLi+38,001,"|"+SPACE(02)+PER_GO_I+" A "+PER_GO_F+SPACE(32),,)
+    PrintOut(nLi+38,079,"|",,)
+
+    PrintOut(nLi+39,001,"|"+SPACE(77)+"|",,)
+
+    PrintOut(nLi+40,001,"|"+SPACE(02)+UPPER("3 Fazendo uso da flexibilidade prevista na Clausula 4, alinea, cumulada    ")+"|",,)
+    PrintOut(nLi+41,001,"|"+SPACE(02)+UPPER("com a clausula 5 do Termo Aditivo a Convencao Coletiva de Trabalho         ")+"|",,)
+    PrintOut(nLi+42,001,"|"+SPACE(02)+UPPER("2019/2021 (para as bases sindicais do Sinthoresp e do Sindifast) e, para as")+"|",,)
+    PrintOut(nLi+43,001,"|"+SPACE(02)+UPPER("demais bases, fazendo uso do permissivo contigo no artigo 2 da MP 927/2020,")+"|",,)
+    PrintOut(nLi+44,001,"|"+SPACE(02)+UPPER("as partes negociam que                                                     ")+"|",,)
+
+    PrintOut(nLi+45,001,"|"+SPACE(77)+"|",,)
+    PrintOut(nLi+46,001,"|"+SPACE(02)+UPPER("3.1 Os valores das ferias antecipadas + adicional de 1/3 serao pagos em 04 ")+"|",,)
+    PrintOut(nLi+47,001,"|"+SPACE(02)+UPPER("parcelas mensais e consecutivas sendo certo de que o vencimento da primeira")+"|",,)
+    PrintOut(nLi+48,001,"|"+SPACE(02)+UPPER("delas sera 30 (trinta) dias apos o efetivo inicio do gozo pelo EMPREGADO.  ")+"|",,)
+    PrintOut(nLi+49,001,"|"+SPACE(02)+UPPER("Assim, os pagamentos serao efetuados de acordo com o seguinte cronograma:  ")+"|",,)
+    PrintOut(nLi+50,001,"|"+SPACE(02)+UPPER("PARCELA 1 30/04/2020 PARCELA 2 30/05/2020                                  ")+"|",,)
+    PrintOut(nLi+51,001,"|"+SPACE(02)+UPPER("PARCELA 3 30/06/2020 PARCELA 4 31/07/2020                                  ")+"|",,)
+    PrintOut(nLi+52,001,"|"+SPACE(77)+"|",,)
+
+    PrintOut(nLi+53,001,"|"+SPACE(02)+UPPER("3.2 No ato da concessao das ferias, a EMPRESA fara o imediato acerto do    ")+"|",,)
+    PrintOut(nLi+54,001,"|"+SPACE(02)+UPPER("saldo de salario que estiver pendente mediante deposito em conta bancaria  ")+"|",,)
+    PrintOut(nLi+55,001,"|"+SPACE(02)+UPPER("de titularidade do EMPREGADO, a qual ja e de conhecimento da empresa.      ")+"|",,)
+    PrintOut(nLi+56,001,"|"+SPACE(77)+"|",,)
+
+    PrintOut(nLi+57,001,"|"+SPACE(02)+UPPER("4 O empregado que gozar somente ferias proporcionais tera reiniciada a     ")+"|",,)
+    PrintOut(nLi+58,001,"|"+SPACE(02)+UPPER("contagem do periodo aquisitivo, quando do seu retorno ao trabalho similar a")+"|",,)
+    PrintOut(nLi+59,001,"|"+SPACE(02)+UPPER("forma prevista no artigo 140 da CLT.                                       ")+"|",,)
+    PrintOut(nLi+60,001,"*"+cReplic77+"*",,)
+
+
+    PrintOut(nLi+01,001,"*"+cReplic77+"*",,)
+    PrintOut(nLi+02,001,"|"+SPACE(02)+UPPER("5 As partes concordam que, na impossibilidade de ser emitido e assinado    ")+"|",,)
+    PrintOut(nLi+03,001,"|"+SPACE(02)+UPPER("eventual documento especifico, o comprovante de deposito bancario servira  ")+"|",,)
+    PrintOut(nLi+04,001,"|"+SPACE(02)+UPPER("como recibo de quitacao das parcelas avencadas no presente acordo (e da    ")+"|",,)
+    PrintOut(nLi+05,001,"|"+SPACE(02)+UPPER("proporcao de cada verba que a compoe).                                     ")+"|",,)
+    PrintOut(nLi+06,001,"|"+SPACE(77)+"|",,)
+
+    PrintOut(nLi+07,001,"|"+SPACE(02)+UPPER("6 Ficam mantidas as demais condicoes originais do contrato de trabalho que ")+"|",,)
+    PrintOut(nLi+08,001,"|"+SPACE(02)+UPPER("nao sejam conflitantes com as alteracoes formalizadas pelo presente        ")+"|",,)
+    PrintOut(nLi+09,001,"|"+SPACE(02)+UPPER("instrumento.                                                               ")+"|",,)
+    PrintOut(nLi+10,001,"|"+SPACE(77)+"|",,)
+
+    PrintOut(nLi+11,001,"|"+SPACE(02)+UPPER("E assim, por estarem justos e contratados, assinam o presente acordo em 2  ")+"|",,)
+    PrintOut(nLi+12,001,"|"+SPACE(02)+UPPER("(duas) vias de igual teor, juntamente com as testemunhas infra-assinadas,  ")+"|",,)
+    PrintOut(nLi+13,001,"|"+SPACE(02)+UPPER("para que possa produzir seus efeitos legais.                               ")+"|",,)
+
+    PrintOut(nLi+14,001,"|"+SPACE(77)+"|",,)
+    PrintOut(nLi+15,001,"|"+SPACE(77)+"|",,)
+    PrintOut(nLi+16,001,"|"+SPACE(77)+"|",,)
+
+    PrintOut(nLi+17,001,"|"+SPACE(02)+UPPER("       Atenciosamente                       Ciente em  _____/_____/_______ ")+"|",,)
+
+    PrintOut(nLi+18,001,"|"+SPACE(77)+"|",,)
+    PrintOut(nLi+19,001,"|"+SPACE(77)+"|",,)
+    PrintOut(nLi+20,001,"|"+SPACE(77)+"|",,)
+
+
+    PrintOut(nLi+21,001,"|                       Assinatura do Empregador:____________________________ |",,)
+
+    PrintOut(nLi+22,001,"|"+SPACE(77)+"|",,)
+    PrintOut(nLi+23,001,"|"+SPACE(77)+"|",,)
+    PrintOut(nLi+24,001,"|"+SPACE(77)+"|",,)
+
+
+    PrintOut(nLi+25,001,"|                       Assinatura do Empregado:____________________________  |",,)
+
+    PrintOut(nLi+26,001,"|"+SPACE(77)+"|",,)
+    PrintOut(nLi+27,001,"|"+SPACE(77)+"|",,)
+    PrintOut(nLi+28,001,"|"+SPACE(77)+"|",,)
+
+    PrintOut(nLi+29,001,"*"+cReplic77+"*",,)
+
+
+
+
+	If nSol13 == 1
+		n1Parc   := 0
+
+		dbSelectArea( "SRR" )
+		If dbSeek(SRA->RA_FILIAL + SRA->RA_MAT + "F" + Dtos(dDtBusFer) + aCodFol[022,1] )
+			n1Parc := 1
+		Endif
+
+		If n1Parc > 0
+			PrintOut(nLi+01,001,"*"+cReplic77+"*",,)
+			PrintOut(nLi+02,001,"|"+SPACE(18)+" SOLICITACAO DA 1a PARCELA DO 13o SALARIO "+SPACE(17)+"|",,)
+			PrintOut(nLi+03,001,"|"+SPACE(18)+" ======================================== "+SPACE(17)+"|",,)
+			PrintOut(nLi+04,001,"|"+SPACE(77)+"|",,)
+			If dDtSt13 > SRA->RA_ADMISSA
+				PrintOut(nLi+05,001,"|"+SPACE(28+(20-LEN(ALLTRIM(aInfo[5]))))+ALLTRIM(aInfo[5])+", "+SUBSTR(DTOC(dDTSt13),1,2)+" de "+MesExtenso(MONTH(dDTSt13))+" de "+STR(YEAR(dDTSt13),4),,)
+			Else
+				PrintOut(nLi+05,001,"|"+SPACE(28+(20-LEN(ALLTRIM(aInfo[5]))))+ALLTRIM(aInfo[5])+", "+SUBSTR(DTOC(SRA->RA_ADMISSAO),1,2)+" de "+MesExtenso(MONTH(SRA->RA_ADMISSAO))+" de "+STR(YEAR(SRA->RA_ADMISSA),4),,)
+			Endif
+
+			PrintOut(nLi+05,079,"|",,)
+			PrintOut(nLi+06,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+07,001,"|"+SPACE(07)+"A"+SPACE(69)+"|",,)
+			PrintOut(nLi+08,001,"|"+SPACE(07)+aInfo[3],,)
+			PrintOut(nLi+08,079,"|",,)
+			PrintOut(nLi+09,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+10,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+11,001,"|"+SPACE(07)+"Prezados Senhores"+SPACE(53)+"|",,)
+			PrintOut(nLi+12,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+13,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+14,001,"|"+SPACE(16)+"Nos  termos da legislacao vigente, solicito  o  pagamento"+SPACE(4)+"|",,)
+			PrintOut(nLi+15,001,"|"+SPACE(07)+"da  1a  Parcela  do 13o Salario por  ocasiao  do  gozo  de  minhas    |",,)
+			PrintOut(nLi+16,001,"|"+SPACE(07)+"ferias."+SPACE(63)+"|",,)
+			PrintOut(nLi+17,001,"|"+SPACE(16)+"Solicito apor o seu ciente na copia desta."+SPACE(19)+"|",,)
+			PrintOut(nLi+18,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+19,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+20,001,"|"+SPACE(07)+SRA->RA_NOME+SPACE(02)+"Registro No: "+SRA->RA_FILIAL+" "+SRA->RA_MAT,,)
+			PrintOut(nLi+20,079,"|",,)
+
+
+
+			If cPaisLoc == "BRA" .and.  SRA->RA_SITFOLH $ "D" .and.  nImprDem == 1
+				cDesc := DescCc( SRR->RR_CC, SRR->RR_FILIAL )
+			Else
+				cDesc := DescCc( SRA->RA_CC, SRA->RA_FILIAL )
+			EndIf
+
+			cLinha:= "|" + SPACE(07) + "CTPS = " + SRA->RA_NUMCP+" - "+SRA->RA_SERCP+SPACE(10)
+			cLInha:= cLinha + "C.CUSTO: " + Alltrim(cDesc)
+			PrintOut(nLi+21,001,cLinha,,)
+			PrintOut(nLi+21,079,"|",,)
+			lDepto	:= CpoUsado("RA_DEPTO") .And.  !EMPTY(SRA->RA_DEPTO)
+			IF lDepto
+				PrintOut(nLi+22,001,"|"+SPACE(39)+"DEPTO: "+(fDesc("SQB",SRA->RA_DEPTO,"QB_DESCRIC")),,) ; PrintOut(nLi+22,079,"|",,)
+			Else
+				PrintOut(nLi+22,001,"|",,) ; PrintOut(nLi+22,079,"|",,)
+			EndIF
+			PrintOut(nLi+23,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+24,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+25,001,"|"+SPACE(07)+"Atenciosamente"+SPACE(18)+"Ciente em ___/___/___"+SPACE(17)+"|",,)
+			PrintOut(nLi+26,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+27,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+28,001,"|"+SPACE(07)+cReplic22+SPACE(10)+cReplic35+space(03)+"|",,)
+			PrintOut(nLi+29,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+30,001,"*"+cReplic77+"*",,)
+			nLi:=nLi+30
+
+		Endif
+	Endif
+
+
+
+
+	If nSolAb == 1
+		nAbono   := 0
+		n13Abono := 0
+
+		dbSelectArea( "SRR" )
+
+		If dbSeek(SRA->RA_FILIAL + SRA->RA_MAT + "F" + Dtos(dDtBusFer) + aCodFol[074,1] )
+			nAbono := 1
+		Endif
+
+		If dbSeek(SRA->RA_FILIAL + SRA->RA_MAT + "F" + Dtos(dDtBusFer) + aCodFol[079,1] )
+			n13Abono := 1
+		Endif
+
+		If ( nAbono + n13Abono ) > 0
+			PrintOut(nLi+01,001,"*"+cReplic77+"*",,)
+			PrintOut(nLi+02,001,"|"+SPACE(18)+"     SOLICITACAO DO ABONO DE FERIAS       "+SPACE(17)+"|",,)
+			PrintOut(nLi+03,001,"|"+SPACE(18)+"     ==============================       "+SPACE(17)+"|",,)
+	   		PrintOut(nLi+04,001,"|"+SPACE(77)+"|",,)
+			dDtSolAb:= DaySub(SRH->RH_DBASEAT,nDAbnPec)
+			PrintOut(nLi+05,001,"|"+SPACE(28+(20-LEN(ALLTRIM(aInfo[5]))))+ALLTRIM(aInfo[5])+", "+SUBSTR(DTOC(dDtSolAb),1,2)+" de "+MesExtenso(MONTH(dDtSolAb))+" de "+STR(YEAR(dDtSolAb),4),,)
+			PrintOut(nLi+05,079,"|",,)
+			PrintOut(nLi+06,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+07,001,"|"+SPACE(07)+"A"+SPACE(69)+"|",,)
+			PrintOut(nLi+08,001,"|"+SPACE(07)+aInfo[3],,)
+			PrintOut(nLi+08,079,"|",,)
+			PrintOut(nLi+09,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+10,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+11,001,"|"+SPACE(07)+"Prezados Senhores"+SPACE(53)+"|",,)
+			PrintOut(nLi+12,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+13,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+14,001,"|"+SPACE(16)+"Nos  termos da legislacao vigente, solicito  a  conversao "+SPACE(3)+"|",,)
+			PrintOut(nLi+15,001,"|"+SPACE(07)+"de  1/3  (Hum Terco)  de  minhas  ferias   relativas  ao   periodo    |",,)
+			PrintOut(nLi+16,001,"|"+SPACE(07)+"aquisitivo de "+PADR(DTOC(SRH->RH_DATABAS),10)+" a "+PADR(DTOC(SRH->RH_DBASEAT),10)+" em abono pecuniario."+SPACE(12)+"|",,)
+			PrintOut(nLi+17,001,"|"+SPACE(16)+"Solicito apor o seu ciente na copia desta."+SPACE(19)+"|",,)
+			PrintOut(nLi+18,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+19,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+20,001,"|"+SPACE(07)+SRA->RA_NOME+SPACE(02)+"Registro No: "+SRA->RA_FILIAL+" "+SRA->RA_MAT,,)
+			PrintOut(nLi+20,079,"|",,)
+
+
+
+			If cPaisLoc == "BRA" .and.  SRA->RA_SITFOLH $ "D" .and.  nImprDem == 1
+				cDesc := DescCc( SRR->RR_CC, SRR->RR_FILIAL )
+			Else
+				cDesc := DescCc( SRA->RA_CC, SRA->RA_FILIAL )
+			EndIf
+
+			cLinha:="|" + SPACE(07) + "CTPS = " + SRA->RA_NUMCP+" - "+SRA->RA_SERCP+SPACE(10)+"C.CUSTO: "+ AllTrim(cDesc)
+			PrintOut(nLi+21,001,cLinha,,)
+			PrintOut(nLi+21,079,"|",,)
+			lDepto	:= CpoUsado("RA_DEPTO") .And.  !EMPTY(SRA->RA_DEPTO)
+			IF lDepto
+				PrintOut(nLi+22,001,"|"+SPACE(39)+"DEPTO: "+(fDesc("SQB",SRA->RA_DEPTO,"QB_DESCRIC")),,) ; PrintOut(nLi+22,079,"|",,)
+			Else
+				PrintOut(nLi+22,001,"|",,) ; PrintOut(nLi+22,079,"|",,)
+			EndIF
+			PrintOut(nLi+23,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+24,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+25,001,"|"+SPACE(07)+"Atenciosamente"+SPACE(18)+"Ciente em ___/___/___"+SPACE(17)+"|",,)
+			PrintOut(nLi+26,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+27,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+28,001,"|"+SPACE(07)+cReplic22+SPACE(10)+cReplic35+SPACE(03)+"|",,)
+			PrintOut(nLi+29,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+30,001,"*"+cReplic77+"*",,)
+			nLi:=nLi+30
+		Endif
+	Endif
+
+
+
+
+	If nAviso == 1
+		If nLi > 35
+			nLi := 1
+		Endif
+
+		PrintOut(nLi+01,001,"*"+cReplic77+"*",,)
+		PrintOut(nLi+02,001,"|"+SPACE(30)+" AVISO DE FERIAS ",,)	;PrintOut(nLi+02,079,"|",,)
+		PrintOut(nLi+03,001,"|"+SPACE(30)+Replicate("=",Len(" AVISO DE FERIAS ")+1),,) ;PrintOut(nLi+03,079,"|",,)
+		PrintOut(nLi+04,001,"|",,) ;PrintOut(nLi+04,079,"|",,)
+
+		IF cPaisLoc == "ANG"
+			PrintOut(nLi+05,001,"|"+SPACE(28+(20-LEN(ALLTRIM(aInfo[5]))))+ALLTRIM(aInfo[5])+", "+SUBSTR(DTOC(SRH->RH_DTRECIB),1,2)+" de "+MesExtenso(MONTH(SRH->RH_DTRECIB))+" de "+STR(YEAR(SRH->RH_DTRECIB),4),,)
+		ELSE
+			PrintOut(nLi+05,001,"|"+SPACE(28+(20-LEN(ALLTRIM(aInfo[5]))))+ALLTRIM(aInfo[5])+", "+SUBSTR(DTOC(SRH->RH_DTAVISO),1,2)+" de "+MesExtenso(MONTH(SRH->RH_DTAVISO))+" de "+STR(YEAR(SRH->RH_DTAVISO),4),,)
+		ENDIF
+
+		PrintOut(nLi+05,079,"|",,)
+		PrintOut(nLi+06,001,"|",,) ; PrintOut(nLi+06,079,"|",,)
+
+		If cPaisLoc <> "ARG"
+			PrintOut(nLi+07,001,"|"+SPACE(07)+"A(O) SR(A)",,)	; PrintOut(nLi+07,079,"|",,)
+		Else
+			PrintOut(nLi+07,001,"|"+SPACE(07)+"SR(A)    |",,)	; PrintOut(nLi+07,079,"|",,)
+		EndIf
+
+		PrintOut(nLi+08,001,"|"+SPACE(77)+"|",,)
+		PrintOut(nLi+09,001,"|"+SPACE(07)+Left(SRA->RA_NOME,30),,) ;PrintOut(nLi+09,079,"|",,)
+
+
+
+		dbSelectArea( "SRR" )
+
+		If cPaisLoc == "BRA" .and.  SRA->RA_SITFOLH $ "D" .and.  nImprDem == 1 .and.  dbSeek( SRA->RA_FILIAL + SRA->RA_MAT + "F" + Dtos(dDtBusFer) )
+			cDesc := DescCc( SRR->RR_CC, SRR->RR_FILIAL )
+		Else
+			cDesc := DescCc( SRA->RA_CC, SRA->RA_FILIAL )
+		EndIf
+
+		If cPaisLoc == "BRA"
+			cLinha:= "|" + SPACE(07) + "CTPS = " + SRA->RA_NUMCP+" - "+SRA->RA_SERCP+SPACE(8)+"C.CUSTO: "
+		ElseIf !( cPaisLoc $ "ARG|ANG" )
+			cLinha:= "|" + SPACE(07) + "CTPS = " + SRA->RA_NUMCP+" - "+SRA->RA_SERCP+SPACE(8)+"DEPTO: "
+		ElseIF cPaisLoc == "ANG"
+		    cLinha:= "|" + SPACE(07) + "DEPTO: "
+		else
+
+		EndIf
+
+		cLInha:= cLinha+AllTrim(cDesc)
+		PrintOut(nLi+10,001,cLinha,,) ;PrintOut(nLi+10,079,"|",,)
+		lDepto	:= CpoUsado("RA_DEPTO") .And.  !EMPTY(SRA->RA_DEPTO)
+		IF lDepto
+			PrintOut(nLi+11,001,"|"+SPACE(37)+"DEPTO: "+(fDesc("SQB",SRA->RA_DEPTO,"QB_DESCRIC")),,) ; PrintOut(nLi+11,079,"|",,)
+		Else
+			PrintOut(nLi+11,001,"|",,) ; PrintOut(nLi+11,079,"|",,)
+		EndIF
+		PrintOut(nLi+12,001,"|",,) ; PrintOut(nLi+12,079,"|",,)
+		PrintOut(nLi+13,001,"|"+SPACE(16)+"Nos  termos da legislacao  vigente,  suas  ferias   serao",,) ; PrintOut(nLi+13,079,"|",,)
+		PrintOut(nLi+14,001,"|"+SPACE(07)+"concedidas conforme o demonstrativo abaixo:",,) ; PrintOut(nLi+14,079,"|",,)
+
+		If (SRH->RH_DIALRE1 + SRH->RH_DIALREM) > 0
+			PrintOut(nLi+15,001,"|"+SPACE(64)+"Retorno ao Trabalho:",,) ; PrintOut(nLi+15,079,"|",,)
+			PrintOut(nLi+16,001,"| "+"Periodo Aquisitivo:"+SPACE(04)+"Periodo de Gozo:"+SPACE(07)+"Retorno ao Trabalho:"+SPACE(03),,) ; PrintOut(nLi+16,079,"|",,)
+			PrintOut(nLi+17,001,"|"+PADR(DTOC(SRH->RH_DATABAS),10)+" A "+PADR(DTOC(SRH->RH_DBASEAT),10)+SPACE(01)+If(SRH->RH_DIALREM==30," A ",PADR(DTOC(DAAUXI),10)+" A "+PADR(DTOC(DAAUXF),10))+SPACE(6)+(CVALTOCHAR(SRH->RH_DIALRE1+SRH->RH_DIALREM))+SPACE(9)+PADR(DTOC(SRH->RH_DATAFIM+1),10),,) ; PrintOut(nLi+17,079,"|",,)
+
+	   	else
+			PrintOut(nLi+15,001,"|",,) ; PrintOut(nLi+15,079,"|",,)
+		   	PrintOut(nLi+16,001,"|    "+"Periodo Aquisitivo:"+SPACE(08)+"Periodo de Gozo:"+SPACE(06)+"Retorno ao Trabalho:",,) ; PrintOut(nLi+16,079,"|",,)
+
+			IF cPaisLoc == "ANG"
+				PrintOut(nLi+17,001,"|  "+DTOC(SRH->RH_DATABAS)+" A "+DTOC(SRH->RH_DBASEAT)+SPACE(08)+Dtoc(DAAUXI)+" A "+Dtoc(DAAUXF)+SPACE(9)+dDataRet,,) ; PrintOut(nLi+17,079,"|",,)
+
+				IF len(aGozoFer) > 1
+					For ni=2 to len(aGozoFer)
+						nLi++
+			    		DAAUXI   := aGozoFer[ni][1]
+			    		DAAUXF   := aGozoFer[ni][2]
+			    		PrintOut(nLi+17,001,"|",,)
+			    		PrintOut(nLi+17,031,Dtoc(DAAUXI)+" A "+Dtoc(DAAUXF),,)
+			    		PrintOut(nLi+17,079,"|",,)
+			  		next
+				Endif
+			Else
+				PrintOut(nLi+17,001,"|  "+PADR(DTOC(SRH->RH_DATABAS),10)+" A "+PADR(DTOC(SRH->RH_DBASEAT),10)+SPACE(02)+PADR(DTOC(DAAUXI),10)+" A "+PADR(DTOC(DAAUXF),10)+SPACE(8)+PADR(DTOC(DAAUXF+1),10),,) ; PrintOut(nLi+17,079,"|",,)
+			Endif
+		EndIf
+
+		PrintOut(nLi+18,001,"|",,) ; PrintOut(nLi+18,079,"|",,)
+
+		PrintOut(nLi+19,001,"|",,) ; PrintOut(nLi+19,079,"|",,)
+		PrintOut(nLi+20,001,"|",,) ; PrintOut(nLi+20,079,"|",,)
+		PrintOut(nLi+21,001,"|",,) ; PrintOut(nLi+21,079,"|",,)
+		PrintOut(nLi+22,001,"|"+SPACE(02)+cReplic40+SPACE(01)+cReplic33+SPACE(01),,) ; PrintOut(nLi+22,079,"|",,)
+		PrintOut(nLi+23,001,"|"+SPACE(02)+SubStr(aInfo[3]+Space(40),1,40)+SPACE(05)+Left(SRA->RA_NOME,30),,) ; PrintOut(nLi+23,079,"|",,)
+		PrintOut(nLi+24,001,"|",,) ; PrintOut(nLi+24,079,"|",,)
+		PrintOut(nLi+25,001,"*"+cReplic77+"*",,)
+		nLi:=nLi+30
+	Endif
+
+
+
+
+	If nRecAb == 1
+		nValAb		:= 0.00
+		nValab13 	:= 0.00
+		nValnLiq	:= 0.00
+		cRet1		:= ""
+		cRet2		:= ""
+
+		If nLi > 35
+			nLi := 1
+		Endif
+
+		dbSelectArea( "SRR" )
+		dbGoTop()
+
+		For i := 1 To Len(aVerbsAbo)
+
+			If dbSeek(SRA->RA_FILIAL + SRA->RA_MAT + "F" + Dtos(dDtBusFer) + aVerbsAbo[i] )
+				nValAb += SRR->RR_VALOR
+			Endif
+
+		Next
+
+		For i := 1 To Len(aVerbs13Abo)
+
+			If dbSeek(SRA->RA_FILIAL + SRA->RA_MAT + "F" + Dtos(dDtBusFer) + aVerbs13Abo[i] )
+				nValAb13 += SRR->RR_VALOR
+			Endif
+
+		next
+
+		If ( nValAb + nValAb13 ) > 0
+			PrintOut(nLi+01,001,"*"+cReplic77+"*",,)
+			PrintOut(nLi+02,001,"|"+SPACE(25)+" RECIBO DE ABONO DE FERIAS  "+SPACE(24)+"|",,)
+			PrintOut(nLi+03,001,"|"+SPACE(25)+" =========================  "+SPACE(24)+"|",,)
+			PrintOut(nLi+04,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+05,001,"|"+SPACE(07)+Sra->RA_NOME+SPACE(40)+"|",,)
+
+
+
+			If cPaisLoc == "BRA" .and.  SRA->RA_SITFOLH $ "D" .and.  nImprDem == 1
+				cDesc := DescCc( SRR->RR_CC, SRR->RR_FILIAL )
+			Else
+				cDesc := DescCc( SRA->RA_CC, SRA->RA_FILIAL )
+			EndIf
+
+			cLinha:="|" + SPACE(07) + "CTPS = " + SRA->RA_NUMCP+" - "+SRA->RA_SERCP+SPACE(8)
+			cLInha := cLinha + "C.CUSTO: " + Alltrim(cDesc)
+			PrintOut(nLi+06,001,cLinha,,)
+			PrintOut(nLi+06,079,"|",,)
+			lDepto	:= CpoUsado("RA_DEPTO") .And.  !EMPTY(SRA->RA_DEPTO)
+			IF lDepto
+				PrintOut(nLi+07,001,"|"+SPACE(37)+"DEPTO: "+(fDesc("SQB",SRA->RA_DEPTO,"QB_DESCRIC")),,) ; PrintOut(nLi+07,079,"|",,)
+			Else
+				PrintOut(nLi+07,001,"|",,) ; PrintOut(nLi+07,079,"|",,)
+			EndIF
+			PrintOut(nLi+08,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+09,001,"|"+SPACE(27)+"D E M O N S T R A T I V O"+SPACE(25)+"|",,)
+			PrintOut(nLi+10,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+11,001,"|  Periodo de ferias em Abono Pecuniario      Periodo de gozo de ferias       ³",,)
+
+			If !empty(SRH->RH_ABOPEC)
+				cAbono 	:= SRH->RH_ABOPEC
+			Else
+				cAbono	:= GetMv("MV_ABOPEC")
+				cAbono 	:= if(cAbono=="S","1","2")
+			EndIF
+
+			If cAbono == "1"
+				PrintOut(nLi+12,001,"|"+Space(7)+PADR(DtoC(SRH->RH_DATAINI-SRH->RH_DABONPEC),10)+"  a  "+Dtoc(SRH->RH_DATAINI-1)+Space(15)+PADR(Dtoc(SRH->RH_DATAINI),10)+"  a  "+PADR(DtoC(DaAuxF),10)+Space(5)+"|",,)
+			Else
+				PrintOut(nLi+12,001,"|"+Space(7)+PADR(DtoC(DaAuxF+1),10)+"  a  "+PADR(Dtoc(DaAuxF+SRH->RH_DABONPEC),10)+Space(15)+PADR(Dtoc(SRH->RH_DATAINI),10)+"  a  "+PADR(DtoC(DaAuxF),10)+Space(5)+"|",,)
+			Endif
+			PrintOut(nLi+13,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+14,001,"|"+SPACE(07)+"Abono ("+STR(SRH->RH_DABONPE,3)+") Dias :          "+TRANSFORM(nValAb,"@E 999,999,999.99")+SPACE(28)+"|",,)
+			PrintOut(nLi+15,001,"|"+SPACE(07)+"Acrescimo 1/3 :             "+TRANSFORM(nValAb13,"@E 999,999,999.99")+SPACE(28)+"|",,)
+			PrintOut(nLi+16,001,"|"+SPACE(07)+"Liquido :                   "+TRANSFORM(nValAb13+nValab,"@E 999,999,999.99")+SPACE(28)+"|",,)
+			nLi:=nLi+3
+			nValnLiq := nValAb13+nValab
+			PrintOut(nLi+14,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+15,001,"|"+SPACE(77)+"|",,)
+			cExt := Extenso(nValnLiq, .F. ,1)
+			SepExt(cExt,13,70,@cRet1,@cRet2)
+			PrintOut(nLi+16,001,"|"+SPACE(17)+"Recebi de "+SubStr(aInfo[3],1,50),,)
+			PrintOut(nLi+16,079,"|",,)
+			PrintOut(nLi+17,001,"|"+Space(07)+" a importancia Liquida de  R$ "+TRANSFORM(nValnLiq,"@E 999,999,999.99")+"  ("+cRet1+SPACE(9)+" |",,)
+
+			nLenCRet2 := len(cRet2)
+			If nLenCRet2 > 63
+				PrintOut(nLi+18,001,"|"+SPACE(08)+subStr(cRet2,1,69),,)
+				PrintOut(nLi+18,079,"|",,)
+				PrintOut(nLi+19,001,"|"+SPACE(08)+subStr(cRet2,70)+".****)",,)
+				PrintOut(nLi+19,079,"|",,)
+				PrintOut(nLi+20,001,"|"+SPACE(07)+" conforme demonstrativo acima, referente ao abono pecuniario.",,)
+				PrintOut(nLi+20,079,"|",,)
+				PrintOut(nLi+21,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+22,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+23,001,"| "+ALLTRIM(aInfo[5])+", "+STRZERO(DAY(SRH->RH_DTRECIB),2)+" de "+MesExtenso(MONTH(SRH->RH_DTRECIB))+" de "+STR(YEAR(SRH->RH_DTRECIB),4),,)
+				PrintOut(nLi+23,079,"|",,)
+				PrintOut(nLi+24,001,"|"+SPACE(46)+cReplic30+" |",,)
+				PrintOut(nLi+25,001,"|"+SPACE(46)+SRA->RA_NOME+" |",,)
+				PrintOut(nLi+26,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+27,001,"*"+cReplic77+"*",,)
+				nLi:=nLi+25
+			Else
+				PrintOut(nLi+18,001,"|"+SPACE(08)+cRet2+".****)",,)
+				PrintOut(nLi+18,079,"|",,)
+				PrintOut(nLi+19,001,"|"+SPACE(07)+" conforme demonstrativo acima, referente ao abono pecuniario.",,)
+				PrintOut(nLi+19,079,"|",,)
+				PrintOut(nLi+20,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+21,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+22,001,"| "+ALLTRIM(aInfo[5])+", "+STRZERO(DAY(SRH->RH_DTRECIB),2)+" de "+MesExtenso(MONTH(SRH->RH_DTRECIB))+" de "+STR(YEAR(SRH->RH_DTRECIB),4),,)
+				PrintOut(nLi+22,079,"|",,)
+				PrintOut(nLi+23,001,"|"+SPACE(46)+cReplic30+" |",,)
+				PrintOut(nLi+24,001,"|"+SPACE(46)+SRA->RA_NOME+" |",,)
+				PrintOut(nLi+25,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+26,001,"*"+cReplic77+"*",,)
+				nLi:=nLi+26
+			EndIf
+
+		Endif
+
+	Endif
+
+
+
+
+	If nRec13 == 1
+		nVal13o  := 0.00
+		nPen13o  := 0.00
+		nVal13a  := 0.00
+		nValnLiq := 0.00
+		cRet1    := ""
+		cRet2    := ""
+
+		If nLi > 35
+			nLi := 1
+		Endif
+
+		dbSelectArea( "SRR" )
+		If dbSeek(SRA->RA_FILIAL + SRA->RA_MAT + "F" + Dtos(dDtBusFer) + cPd13o )
+			nVal13o := SRR->RR_VALOR
+		Endif
+
+		For nCntCd := 1 To Len(aCodBenef)
+			If dbSeek(SRA->RA_FILIAL + SRA->RA_MAT + "F" + Dtos(dDtBusFer) + aCodBenef[nCntCd,1] )
+				nPen13o += SRR->RR_VALOR
+			EndIf
+		next
+
+		If nVal13o > 0
+			PrintOut(nLi+01,001,"*"+cReplic77+"*",,)
+			PrintOut(nLi+02,001,"|"+SPACE(20)+" RECIBO DA 1a. PARCELA DO 13o SALARIO "+SPACE(19)+"|",,)
+			PrintOut(nLi+03,001,"|"+SPACE(20)+" ==================================== "+SPACE(19)+"|",,)
+			PrintOut(nLi+04,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+05,001,"|"+SPACE(07)+Sra->RA_NOME+SPACE(40)+"|",,)
+
+
+
+			If cPaisLoc == "BRA" .and.  SRA->RA_SITFOLH $ "D" .and.  nImprDem == 1
+				cDesc := DescCc( SRR->RR_CC, SRR->RR_FILIAL )
+			Else
+				cDesc := DescCc( SRA->RA_CC, SRA->RA_FILIAL )
+			EndIf
+
+			nTamSpaco := 77-(7 + 7 + len(SRA->RA_NUMCP) + 3 + len(SRA->RA_SERCP) + 8 + 7 + len(cDesc))
+
+			cLinha:="|" + SPACE(07) + "CTPS = " + SRA->RA_NUMCP+" - "+SRA->RA_SERCP+SPACE(8)
+			cLInha := cLinha + "C.CUSTO: " + Alltrim(cDesc)
+			PrintOut(nLi+06,001,cLinha,,)
+			PrintOut(nLi+06,079,"|",,)
+			lDepto	:= CpoUsado("RA_DEPTO") .And.  !EMPTY(SRA->RA_DEPTO)
+			IF lDepto
+				PrintOut(nLi+07,001,"|"+SPACE(37)+"DEPTO: "+(fDesc("SQB",SRA->RA_DEPTO,"QB_DESCRIC")),,) ; PrintOut(nLi+07,079,"|",,)
+			Else
+				PrintOut(nLi+07,001,"|",,) ; PrintOut(nLi+07,079,"|",,)
+			EndIF
+			PrintOut(nLi+08,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+09,001,"|"+SPACE(27)+"D E M O N S T R A T I V O"+SPACE(25)+"|",,)
+			PrintOut(nLi+10,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+11,001,"|"+SPACE(07)+"1a Parcela do 13o Salario : "+TRANSFORM(nVal13o,"@E 999,999,999.99")+SPACE(28)+"|",,)
+			PrintOut(nLi+12,001,"|"+SPACE(07)+"Adiantamento :              "+TRANSFORM(nVal13a,"@E 999,999,999.99")+SPACE(28)+"|",,)
+			If nPen13o > 0
+				PrintOut(nLi+13,001,"|"+SPACE(07)+"Pensao :"+TRANSFORM(nPen13o,"@E 999,999,999.99")+SPACE(28)+"|",,)
+			EndIf
+			PrintOut(nLi+If(nPen13o>0,14,13),001,"|"+SPACE(07)+"Liquido :                   "+TRANSFORM(nVal13o-nVal13a-nPen13o,"@E 999,999,999.99")+SPACE(28)+"|",,)
+			nValnLiq := nVal13o-nVal13a-nPen13o
+			If nPen13o == 0
+				PrintOut(nLi+14,001,"|"+SPACE(77)+"|",,)
+			EndIf
+			PrintOut(nLi+15,001,"|"+SPACE(77)+"|",,)
+			cExt := Extenso(nValnLiq, .F. ,1)
+			SepExt(cExt,13,70,@cRet1,@cRet2)
+			PrintOut(nLi+16,001,"|"+SPACE(16)+"Recebi de "+subStr(aInfo[3],1,50),,)
+			PrintOut(nLi+16,079,"|",,)
+			PrintOut(nLi+17,001,"|"+Space(07)+" a importancia Liquida de  R$ "+TRANSFORM(nValnLiq,"@E 999,999,999.99")+"  ("+cRet1+SPACE(9)+" |",,)
+
+			nLenCRet2 := len(cRet2)
+			If nLenCRet2 > 63
+				PrintOut(nLi+18,001,"|"+SPACE(08)+subStr(cRet2,1,69),,)
+				PrintOut(nLi+18,079,"|",,)
+				PrintOut(nLi+19,001,"|"+SPACE(08)+subStr(cRet2,70)+".****)",,)
+				PrintOut(nLi+19,079,"|",,)
+				PrintOut(nLi+20,001,"|"+SPACE(07)+" conforme demonstrativo acima, referente a 1a parcela do 13o salario.",,)
+				PrintOut(nLi+20,079,"|",,)
+				PrintOut(nLi+21,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+22,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+23,001,"| "+ALLTRIM(aInfo[5])+", "+STRZERO(DAY(SRH->RH_DTRECIB),2)+" de "+MesExtenso(MONTH(SRH->RH_DTRECIB))+" de "+STR(YEAR(SRH->RH_DTRECIB),4),,)
+				PrintOut(nLi+23,079,"|",,)
+				PrintOut(nLi+24,001,"|"+SPACE(46)+cReplic30+" |",,)
+				PrintOut(nLi+25,001,"|"+SPACE(46)+SRA->RA_NOME+" |",,)
+				PrintOut(nLi+26,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+27,001,"*"+cReplic77+"*",,)
+				nLi:=nLi+25
+			Else
+				PrintOut(nLi+18,001,"|"+SPACE(08)+cRet2+".****)",,)
+				PrintOut(nLi+18,079,"|",,)
+				PrintOut(nLi+19,001,"|"+SPACE(07)+" conforme demonstrativo acima, referente a 1a parcela do 13o salario.",,)
+				PrintOut(nLi+19,079,"|",,)
+				PrintOut(nLi+20,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+21,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+22,001,"| "+ALLTRIM(aInfo[5])+", "+STRZERO(DAY(SRH->RH_DTRECIB),2)+" de "+MesExtenso(MONTH(SRH->RH_DTRECIB))+" de "+STR(YEAR(SRH->RH_DTRECIB),4),,)
+				PrintOut(nLi+22,079,"|",,)
+				PrintOut(nLi+23,001,"|"+SPACE(46)+cReplic30+" |",,)
+				PrintOut(nLi+24,001,"|"+SPACE(46)+SRA->RA_NOME+" |",,)
+				PrintOut(nLi+25,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+26,001,"*"+cReplic77+"*",,)
+				nLi:=nLi+26
+			EndIf
+		Endif
+	Endif
+
+
+
+
+	If nRecib == 1
+
+		aPdv  := {}
+		aPdd  := {}
+		cRet1 := ""
+		cRet2 := ""
+		nLi   := 1
+
+
+
+
+		dbSelectArea("SRR")
+		If dbSeek( SRA->RA_FILIAL + SRA->RA_MAT + "F" )
+			While ! Eof() .And.  SRA->RA_FIlIAL + SRA->RA_MAT + "F" == SRR->RR_FILIAL + SRR->RR_MAT + SRR->RR_TIPO3
+
+
+
+
+
+
+				If AScan(aVerbsAbo, SRR->RR_PD ) == 0 .And.  AScan(aVerbs13Abo, SRR->RR_PD ) == 0 .And.  SRR->RR_PD # cPd13o .And.  SRR->RR_PD # aCodFol[102,1] .And.  AScan(aCodBenef, { |x| x[1] == SRR->RR_PD }) == 0
+
+					If SRR->RR_DATA == dDtBusFer
+						If PosSrv( SRR->RR_PD , SRA->RA_FILIAL , "RV_TIPOCOD" ) == "1"
+							AAdd(aPdv , { SRR->RR_PD , SRR->RR_VALOR })
+						ElseIf PosSrv( SRR->RR_PD , SRA->RA_FILIAL , "RV_TIPOCOD" ) == "2"
+							AAdd(aPdd , { SRR->RR_PD , SRR->RR_VALOR })
+						Endif
+					Endif
+
+				Endif
+				dbSkip()
+			Enddo
+
+			PER_AQ_I := STRZERO(DAY(SRH->RH_DATABASE),2)+" De "+MesExtenso(MONTH(SRH->RH_DATABAS))+" De "+STR(YEAR(SRH->RH_DATABAS),4)
+			PER_AQ_F := STRZERO(DAY(SRH->RH_DBASEATE),2)+" De "+MesExtenso(MONTH(SRH->RH_DBASEAT))+" De "+STR(YEAR(SRH->RH_DBASEAT),4)
+			PER_GO_I := STRZERO(DAY(DAAUXI),2)+" De "+MesExtenso(MONTH(DAAUXI))+" De "+STR(YEAR(DAAUXI),4)
+			PER_GO_F := STRZERO(DAY(DAAUXF),2)+" De "+MesExtenso(MONTH(DAAUXF))+" De "+STR(YEAR(DAAUXF),4)
+
+			nLi:=nLi+1
+			PrintOut(nLi,001,"*"+cReplic77+"*",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"|",,)
+			PrintOut(nLi,030," RECIBO DE FERIAS ",,)
+			PrintOut(nLi,079,"|",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"|",,)
+			PrintOut(nLi,030," ================ ",,)
+			PrintOut(nLi,079,"|",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"|"+SPACE(77)+"|",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"|"+SPACE(77)+"|",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"| Nome do Empregado.......: "+Left(SRA->RA_NOME,30)+SPACE(020)+"|",,)
+			nLi:=nLi+1
+
+			If ! (cPaisLoc $ "ARG|ANG")
+
+				PrintOut(nLi,001,"| Carteira Trabalho.......: "+If(Empty(SRA->RA_NUMCP),Space(7),AllTrim(SRA->RA_NUMCP))+" - "+SRA->RA_SERCP+SPACE(04)+"Registro: "+SRA->RA_FILIAL+" "+SRA->RA_MAT,,)
+				PrintOut(nLi,079,"|",,)
+			Else
+				cLinAtu := "| " + "Registro: "+SRA->RA_FILIAL+" "+SRA->RA_MAT
+				PrintOut(nLi,001,cLinAtu+Space(78-Len(cLinAtu))+"|",,)
+			EndIf
+
+			nLi:=nLi+1
+			PrintOut(nLi,001,"| Periodo Aquisitivo......: "+PER_AQ_I+" A "+PER_AQ_F,,)
+			PrintOut(nLi,079,"|",,)
+			nLi:=nLi+1
+
+			IF cPaisLoc <> "ANG"
+				PrintOut(nLi,001,"| Periodo Gozo das Ferias.: "+PER_GO_I+" A "+PER_GO_F,,)
+			ELSE
+
+			    For i=1 to Len(aGozoFer)
+
+					PER_GO_I := STR(DAY(aGozoFer[i][1]),2)+" De "+MesExtenso(MONTH(aGozoFer[i][1]))+" De "+STR(YEAR(aGozoFer[i][1]),4)
+					PER_GO_F := STR(DAY(aGozoFer[i][2]),2)+" De "+MesExtenso(MONTH(aGozoFer[i][2]))+" De "+STR(YEAR(aGozoFer[i][2]),4)
+
+			    	PrintOut(nLi,001,"| Periodo Gozo das Ferias.: "+PER_GO_I+" A "+PER_GO_F,,)
+
+			    	IF i <> Len(aGozoFer)
+    					PrintOut(nLi,079,"|",,)
+			    		nLi:=nLi+1
+			    	ENDIF
+
+			    next
+
+			Endif
+
+			PrintOut(nLi,079,"|",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"| Qtde. Dias Lic. Remun...: "+cValToChar(SRH->RH_DIALRE1+SRH->RH_DIALREM),,)
+			PrintOut(nLi,079,"|",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"*"+cReplic77+"*",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"|",,)
+
+			PrintOut(nLi,079,"|",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"*"+cReplic77+"*",,)
+			nLi:=nLi+1
+
+			PrintOut(nLi,001,"| Salario Mes ..........: "+Transform(SRH->RH_SALMES,"@E 999,999.99")+Space(05)+"Salario Hora ..........: "+Transform(SRH->RH_SALHRS,"@E 999,999.99"),,)
+			    PrintOut(nLi,079,"|",,)
+
+            nLi:=nLi+1
+
+			PrintOut(nLi,001,"| Valor Dia ............: "+Transform(SRH->RH_SALDIA,"@E 999,999.99")+Space(05)+"Valor Dia Mes Seg .....: "+Transform(SRH->RH_SALDIA1,"@E 999,999.99"),,)
+			    PrintOut(nLi,079,"|",,)
+			nLi:=nLi+1
+
+
+			cDiasFMes := If(SRR->(dbSeek(SRA->RA_FILIAL + SRA->RA_MAT + "F" + Dtos(dDtBusFer) + aCodFol[072,1])), Transform(SRR->RR_HORAS, "@E 999,999.99"), Space(11))
+
+
+			cDiasFMesSeg := If(SRR->(dbSeek(SRA->RA_FILIAL + SRA->RA_MAT + "F" + Dtos(dDtBusFer) + aCodFol[073,1])), Transform(SRR->RR_HORAS, "@E 999,999.99"), Space(11))
+
+
+			PrintOut(nLi,001,"| Dias Ferias Mes:        "+cDiasFMes+Space(05)+"Dias Ferias Mes:         "+cDiasFMesSeg,,)
+			PrintOut(nLi,079,"|",,)
+
+
+			cDiasAbMes := If(SRR->(dbSeek(SRA->RA_FILIAL + SRA->RA_MAT + "F" + Dtos(dDtBusFer) + aCodFol[074,1])), Transform(SRR->RR_HORAS, "@E 999,999.99"), Space(11))
+
+
+			cDiasAbMSeg := If(SRR->(dbSeek(SRA->RA_FILIAL + SRA->RA_MAT + "F" + Dtos(dDtBusFer) + aCodFol[205,1])), Transform(SRR->RR_HORAS, "@E 999,999.99"), Space(11))
+
+			nLi:=nLi+1
+
+			PrintOut(nLi,001,"| Dias Abono Mes:         "+cDiasAbMes+Space(04)+"Dias Abono Mes Seg: "+cDiasAbMSeg,,)
+			PrintOut(nLi,079,"|",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"*"+cReplic77+"*",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"|          P R O V E N T O S           |           D E S C O N T O S          |",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"|-----------------------------------------------------------------------------|",,)
+			nLi:=nLi+1
+
+
+			PrintOut(nLi,001,"| "+"Cod"+" "+"Verba"+Space(8)+"Q/H"+Space(11)+"Valor"+" | "+"Cod"+" "+"Verba"+Space(8)+"Q/H"+Space(11)+"Valor",,)
+
+			PrintOut(nLi,079,"|",,)
+			nLi:=nLi+1
+
+
+
+
+			nMaximo := MAX(Len(aPDV),Len(aPdd))
+			SRR->(DbSetOrder(1))
+
+			For nConta :=1 TO nMaximo
+
+				If nConta > Len(aPdv)
+					DET := Space(37) + "| "
+				Else
+					SRR->(DbSeek(SRA->RA_FILIAL + SRA->RA_MAT + "F" + DToS(dDtBusFer) + aPdv[nConta,1]) )
+					nQtdHoras := SRR->RR_HORAS
+					cDesc := Left(DescPd(aPdv[nConta,1],SRA->RA_FILIAL),11)
+
+					DET := aPdv[nConta,1] + " " + cDesc + " " + Transform(nQtdHoras, "@E 999.99") + Transform(aPdv[nConta,2],"@E 999,999,999.99")+" | "
+				Endif
+
+				If nConta > Len(aPdd)
+					DET += Space(37) + "|"
+				Else
+					SRR->(DbSeek(SRA->RA_FILIAL + SRA->RA_MAT + "F" + DToS(dDtBusFer) + aPdd[nConta,1]) )
+					nQtdHoras := SRR->RR_HORAS
+					cDesc := Left(DescPd(aPdd[nConta,1],SRA->RA_FILIAL),11)
+
+					DET += aPdd[nConta,1] + " " + cDesc + " " + Transform(nQtdHoras, "@E 999.99") + Transform(aPdd[nConta,2],"@E 999,999,999.99")+" |"
+				Endif
+
+				PrintOut(nLi,1,"| "+DET,,)
+				nLi:=nLi+1
+
+			Next
+
+			nTvp := 0.00
+			nTvd := 0.00
+			AeVal(aPdv,{ |X| nTVP:= nTVP + X[2]})
+			AeVal(aPdd,{ |X| nTVD:= nTVD + X[2]})
+
+			PrintOut(nLi,001,"|                                      |                                      |",,)
+			nLi:=nLi+1
+
+			PrintOut(nLi,001,"| Total Proventos......:"+Trans(nTvp,"@E 999,999,999.99")+" "+"| Total Descontos......:"+Trans(nTvd,"@E 999,999,999.99")+" |",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"*"+cReplic77+"*",,)
+			nLi:=nLi+1
+
+			cLiqReceber := Trans(nTvp-nTvd,"@E 999,999,999.99")
+
+			PrintOut(nLi,001,"| Liquido a receber.."+cLiqReceber,,)
+			PrintOut(nLi,079,"|",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"*"+cReplic77+"*",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"|"+SPACE(02)+"Empresa:   "+SubStr(aInfo[3]+Space(40),1,40)+Space(23)+" |",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"|"+SPACE(02)+"Estabelecida a "+SubStr(aInfo[4]+Space(30),1,30)+"   -  Cep: "+SubStr(aInfo[7]+Space(8),1,8),,)
+			PrintOut(nLi,079,"|",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"|"+SPACE(02)+"Cidade: "+SubStr(aInfo[5]+Space(25),1,25)+"   -     UF: "+aInfo[6]+Space(27)+"|",,)
+			cExt   := EXTENSO(nTvp-nTvd, .F. ,1)
+
+			SepExt(cExt,52,77,@cRet1,@cRet2)
+
+			nLi:=nLi+1
+
+            PrintOut(nLi,001,"|  ",,)
+			PrintOut(nLi,79,"|",,)
+
+            nLi:=nLi+1
+
+			PrintOut(nLi,001,"|  Declaro estar ciente que o pagamento desta importancia sera efetuado em    |",,)
+            nLi:=nLi+1
+
+            PrintOut(nLi,001,"|  04 parcelas mensais e consecutivas, sendo certo de que o vencimento da     |",,)
+            nLi:=nLi+1
+
+            PrintOut(nLi,001,"|  primeira delas sera 30 (trinta) dias apos o efetivo inicio do gozo         |",,)
+            nLi:=nLi+1
+
+            PrintOut(nLi,001,"|  Os pagamentos serao efetuados mediante deposito bancario                   |",,)
+            nLi:=nLi+1
+
+            PrintOut(nLi,001,"|  cujos comprovantes servirao de recibo, dando assim a plena e geral quitacao|",,)
+            nLi:=nLi+1
+
+
+			If nDtRec == 1
+				PrintOut(nLi,001,"|  "+ALLTRIM(aInfo[5])+", "+StrZero(Day(SRH->RH_DTRECIB),2)+" de "+MesExtenso(MONTH(SRH->RH_DTRECIB))+" de "+STRZERO(YEAR(SRH->RH_DTRECIB),4),,)
+				PrintOut(nLi,79,"|",,)
+			Else
+				PrintOut(nLi,001,"|  ",,)
+				PrintOut(nLi,79,"|",,)
+			Endif
+			nLi:=nLi+1
+			PrintOut(nLi,001,"|"+SPACE(77)+"|",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"|                         Assinatura do Empregado:__________________________  |",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"|"+SPACE(077)+"|",,)
+			nLi:=nLi+1
+			PrintOut(nLi,001,"*"+cReplic77+"*",,)
+			nLi:=nLi+1
+
+		Endif
+		nLi := 1
+	Endif
+
+Else
+
+
+	If M->RH_DFERIAS > 0 .and.  SRA->RA_SITFOLH <> "D"
+		If nLi > 35
+			nLi := 1
+		Endif
+
+
+
+
+		If nAviso == 1
+			If nLi > 35
+				nLi := 1
+			Endif
+
+			PrintOut(nLi+01,001,"*"+cReplic77+"*",,)
+			PrintOut(nLi+02,001,"|"+SPACE(30)+" AVISO DE FERIAS "+SPACE(30)+"|",,)
+			PrintOut(nLi+03,001,"|"+SPACE(30)+" =============== "+SPACE(30)+"|",,)
+			PrintOut(nLi+04,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+05,001,"|"+SPACE(28+(20-LEN(ALLTRIM(aInfo[5]))))+ALLTRIM(aInfo[5])+", "+SUBSTR(DTOC(M->RH_DTAVISO),1,2)+" de "+MesExtenso(MONTH(M->RH_DTAVISO))+" de "+str(year(M->rh_dtaviso),4),,)
+			PrintOut(nLi+05,079,"|",,)
+			PrintOut(nLi+06,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+07,001,"|"+SPACE(07)+"A(O) SR(A)"+SPACE(60)+"|",,)
+			PrintOut(nLi+08,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+09,001,"|"+SPACE(07)+Left(SRA->RA_NOME,30)+Space(39)+" |",,)
+
+			cDesc := DescCc( SRA->RA_CC, SRA->RA_FILIAL )
+
+			cLinha:= "|" + SPACE(07) + "CTPS = " + SRA->RA_NUMCP+" - "+SRA->RA_SERCP+SPACE(8)+"C.CUSTO: "
+			nTamSpaco := 78 - len(cLinha+cDesc)
+			cLinha:= cLinha+cDesc+SPACE(nTamSpaco)+"|"
+			PrintOut(nLi+10,001,cLinha,,)
+			lDepto	:= CpoUsado("RA_DEPTO") .And.  !EMPTY(SRA->RA_DEPTO)
+			IF lDepto
+				PrintOut(nLi+11,001,"|"+SPACE(39)+"DEPTO: "+(fDesc("SQB",SRA->RA_DEPTO,"QB_DESCRIC")),,) ; PrintOut(nLi+11,079,"|",,)
+			Else
+				PrintOut(nLi+11,001,"|",,) ; PrintOut(nLi+11,079,"|",,)
+			EndIF
+			PrintOut(nLi+12,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+13,001,"|"+SPACE(16)+"Nos  termos da legislacao  vigente,  suas  ferias   serao"+SPACE(04)+"|",,)
+			PrintOut(nLi+14,001,"|"+SPACE(07)+"concedidas conforme o demonstrativo abaixo:"+SPACE(27)+"|",,)
+			PrintOut(nLi+15,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+16,001,"|"+SPACE(06)+"Periodo Aquisitivo:"+SPACE(07)+"Periodo de Gozo:"+SPACE(06)+"Retorno ao Trabalho:"+SPACE(03)+"|",,)
+			PrintOut(nLi+17,001,"|"+SPACE(04)+PADR(DTOC(M->RH_DATABAS),10)+" A "+PADR(DTOC(M->RH_DBASEAT),10)+SPACE(02)+PADR(DTOC(DAAUXI),10)+" A "+PADR(DTOC(DAAUXF),10)+SPACE(6)+PADR(DTOC(DAAUXF+1),10)+SPACE(09)+"|",,)
+			PrintOut(nLi+18,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+19,001,"|"+SPACE(16)+"A remuneracao correspondente as ferias e, se for o  caso,"+SPACE(4)+"|",,)
+			PrintOut(nLi+20,001,"|"+SPACE(07)+"ao abono pecuniario e ao adiantamento da  gratificacao  de  natal,    |",,)
+			PrintOut(nLi+21,001,"|"+SPACE(07)+"encontra-se no  caixa  e  podera  ser  recebida  no  dia "+PADR(DTOC(M->RH_DTRECIB),10)+"."+SPACE(4)+"|",,)
+			PrintOut(nLi+22,001,"|"+SPACE(16)+"Solicitamos  apresentar  a  sua  carteira  de trabalho  e"+SPACE(4)+"|",,)
+			PrintOut(nLi+23,001,"|"+SPACE(07)+"previdencia social ao depto pessoal para as anotacoes necessarias.    |",,)
+			PrintOut(nLi+24,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+25,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+26,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+27,001,"|"+SPACE(02)+cReplic40+SPACE(01)+cReplic33+SPACE(01)+"|",,)
+			PrintOut(nLi+28,001,"|"+SPACE(02)+SubStr(aInfo[3]+Space(40),1,40)+SPACE(05)+Left(SRA->RA_NOME,30)+"|",,)
+			PrintOut(nLi+29,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+30,001,"*"+cReplic77+"*",,)
+			nLi:=nLi+30
+		Endif
+
+
+
+
+		If nSol13 == 1
+			If nLi > 35
+				nLi := 1
+			Endif
+			PrintOut(nLi+01,001,"*"+cReplic77+"*",,)
+			PrintOut(nLi+02,001,"|"+SPACE(18)+" SOLICITACAO DA 1a PARCELA DO 13o SALARIO "+SPACE(17)+"|",,)
+			PrintOut(nLi+03,001,"|"+SPACE(18)+" ======================================== "+SPACE(17)+"|",,)
+			PrintOut(nLi+04,001,"|"+SPACE(77)+"|",,)
+			If dDtSt13 > SRA->RA_ADMISSA
+				PrintOut(nLi+05,001,"|"+SPACE(28+(20-LEN(ALLTRIM(aInfo[5]))))+ALLTRIM(aInfo[5])+", "+SUBSTR(DTOC(dDTSt13),1,2)+" de "+MesExtenso(MONTH(dDTSt13))+" de "+STR(YEAR(dDTSt13),4),,)
+			Else
+				PrintOut(nLi+05,001,"|"+SPACE(28+(20-LEN(ALLTRIM(aInfo[5]))))+ALLTRIM(aInfo[5])+", "+SUBSTR(DTOC(SRA->RA_ADMISSAO),1,2)+" de "+MesExtenso(MONTH(SRA->RA_ADMISSAO))+" de "+STR(YEAR(SRA->RA_ADMISSA),4),,)
+			Endif
+
+			PrintOut(nLi+05,079,"|",,)
+			PrintOut(nLi+06,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+07,001,"|"+SPACE(07)+"A"+SPACE(69)+"|",,)
+
+			nTamNomEmpresa := 77-(7 + len(aInfo[3]))
+			PrintOut(nLi+08,001,"|"+SPACE(07)+aInfo[3]+SPACE(nTamNomEmpresa)+"|",,)
+			PrintOut(nLi+09,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+10,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+11,001,"|"+SPACE(07)+"Prezados Senhores"+SPACE(53)+"|",,)
+			PrintOut(nLi+12,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+13,001,"|"+SPACE(77)+"|",,)
+
+			PrintOut(nLi+14,001,"|"+SPACE(16)+"Nos  termos da legislacao vigente, solicito  o  pagamento"+SPACE(4)+"|",,)
+			PrintOut(nLi+15,001,"|"+SPACE(07)+"da  1a  Parcela  do 13o Salario por  ocasiao  do  gozo  de  minhas    |",,)
+			PrintOut(nLi+16,001,"|"+SPACE(07)+"ferias."+SPACE(63)+"|",,)
+
+			PrintOut(nLi+17,001,"|"+SPACE(16)+"Solicito apor o seu ciente na copia desta."+SPACE(19)+"|",,)
+			PrintOut(nLi+18,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+19,001,"|"+SPACE(77)+"|",,)
+
+			nTamSpaco := 77-(7 + len(SRA->RA_NOME) + 2 + 13 + len(SRA->RA_FILIAL) + 1 +len(SRA->RA_MAT))
+			PrintOut(nLi+20,001,"|"+SPACE(07)+SRA->RA_NOME+SPACE(02)+"Registro No: "+SRA->RA_FILIAL+" "+SRA->RA_MAT+SPACE(nTamSpaco)+"|",,)
+
+			cDesc := DescCc( SRA->RA_CC, SRA->RA_FILIAL )
+
+			nTamSpaco := 77-(7 + 7 + len(SRA->RA_NUMCP) + 3 + len(SRA->RA_SERCP) + 10 + len(cDesc))
+
+			cLinha:= "|" + SPACE(07) + "CTPS = " + SRA->RA_NUMCP+" - "+SRA->RA_SERCP+SPACE(10)
+			cLInha:= cLinha + "C.CUSTO: " + cDesc + Space(nTamSpaco)+"|"
+			PrintOut(nLi+21,001,cLinha,,)
+			lDepto	:= CpoUsado("RA_DEPTO") .And.  !EMPTY(SRA->RA_DEPTO)
+			IF lDepto
+				PrintOut(nLi+22,001,"|"+SPACE(39)+"DEPTO: "+(fDesc("SQB",SRA->RA_DEPTO,"QB_DESCRIC")),,) ; PrintOut(nLi+22,079,"|",,)
+			Else
+				PrintOut(nLi+22,001,"|",,) ; PrintOut(nLi+22,079,"|",,)
+			EndIF
+			PrintOut(nLi+23,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+24,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+25,001,"|"+SPACE(07)+"Atenciosamente"+SPACE(18)+"Ciente em ___/___/___"+SPACE(17)+"|",,)
+			PrintOut(nLi+26,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+27,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+28,001,"|"+SPACE(07)+cReplic22+SPACE(10)+cReplic35+space(03)+"|",,)
+			PrintOut(nLi+29,001,"|"+SPACE(77)+"|",,)
+			PrintOut(nLi+30,001,"*"+cReplic77+"*",,)
+			nLi:=nLi+30
+
+		Endif
+
+
+
+
+		If nSolAb == 1
+
+			If  M->RF_TEMABPE == "S"
+
+				If nLi > 35
+					nLi := 1
+				Endif
+
+				PrintOut(nLi+01,001,"*"+cReplic77+"*",,)
+				PrintOut(nLi+02,001,"|"+SPACE(18)+"     SOLICITACAO DO ABONO DE FERIAS       "+SPACE(17)+"|",,)
+				PrintOut(nLi+03,001,"|"+SPACE(18)+"     ==============================       "+SPACE(17)+"|",,)
+
+				PrintOut(nLi+04,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+05,001,"|"+SPACE(28+(20-LEN(ALLTRIM(aInfo[5]))))+ALLTRIM(aInfo[5])+", "+SUBSTR(DTOC(M->RH_DBASEAT-20),1,2)+" de "+MesExtenso(MONTH(M->RH_DBASEAT-20))+" de "+STR(YEAR(M->RH_DBASEAT-20),4),,)
+
+				PrintOut(nLi+05,079,"|",,)
+				PrintOut(nLi+06,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+07,001,"|"+SPACE(07)+"A"+SPACE(69)+"|",,)
+				PrintOut(nLi+08,001,"|"+SPACE(07)+aInfo[3]+SPACE(30)+"|",,)
+				PrintOut(nLi+09,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+10,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+11,001,"|"+SPACE(07)+"Prezados Senhores"+SPACE(53)+"|",,)
+				PrintOut(nLi+12,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+13,001,"|"+SPACE(77)+"|",,)
+
+				PrintOut(nLi+14,001,"|"+SPACE(16)+"Nos  termos da legislacao vigente, solicito  a  conversao "+SPACE(3)+"|",,)
+				PrintOut(nLi+15,001,"|"+SPACE(07)+"de  1/3  (Hum Terco)  de  minhas  ferias   relativas  ao   periodo    |",,)
+				PrintOut(nLi+16,001,"|"+SPACE(07)+"aquisitivo de "+PADR(DTOC(M->RH_DATABAS),10)+" a "+PADR(DTOC(M->RH_DBASEAT),10)+" em abono pecuniario."+SPACE(12)+"|",,)
+
+				PrintOut(nLi+17,001,"|"+SPACE(16)+"Solicito apor o seu ciente na copia desta."+SPACE(19)+"|",,)
+				PrintOut(nLi+18,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+19,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+20,001,"|"+SPACE(07)+SRA->RA_NOME+SPACE(02)+"Registro No: "+SRA->RA_FILIAL+" "+SRA->RA_MAT+SPACE(16)+"|",,)
+
+				cDesc := DescCc( SRA->RA_CC, SRA->RA_FILIAL )
+
+
+				cLinha:="|" + SPACE(07) + "CTPS = " + SRA->RA_NUMCP+" - "+SRA->RA_SERCP+SPACE(10)+"C.CUSTO: "+ AllTrim(cDesc)
+				PrintOut(nLi+21,001,cLinha,,)
+				PrintOut(nLi+21,079,"|",,)
+				lDepto	:= CpoUsado("RA_DEPTO") .And.  !EMPTY(SRA->RA_DEPTO)
+				IF lDepto
+					PrintOut(nLi+22,001,"|"+SPACE(39)+"DEPTO: "+(fDesc("SQB",SRA->RA_DEPTO,"QB_DESCRIC")),,) ; PrintOut(nLi+22,079,"|",,)
+				Else
+					PrintOut(nLi+22,001,"|",,) ; PrintOut(nLi+22,079,"|",,)
+				EndIF
+				PrintOut(nLi+23,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+24,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+25,001,"|"+SPACE(07)+"Atenciosamente"+SPACE(18)+"Ciente em ___/___/___"+SPACE(17)+"|",,)
+				PrintOut(nLi+26,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+27,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+28,001,"|"+SPACE(07)+cReplic22+SPACE(10)+cReplic35+SPACE(03)+"|",,)
+				PrintOut(nLi+29,001,"|"+SPACE(77)+"|",,)
+				PrintOut(nLi+30,001,"*"+cReplic77+"*",,)
+				nLi:=nLi+30
+			Endif
+		Endif
+	Endif
+Endif
+
+Return(nil)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Static Function fBusGozo(dIni,dFim)
+
+Local aArea		:= SRH->( GetArea() )
+Local aGozoFer  := {}
+
+	dbSelectArea("SRH")
+	DBSETORDER(1)
+	SRH->( DBSEEK(xFilial("SRH")+ SRH->RH_MAT  ))
+
+    While SRH->( !EOF() ) .AND.  SRH->RH_MAT == SRA->RA_MAT
+       	IF SRH->RH_DATABAS == dIni .AND.  SRH->RH_DBASEAT == dFim
+			aAdd( aGozoFer , { SRH->RH_DATAINI, SRH->RH_DATAFIM ,SRH->RH_DFERIAS } )
+    	ENDIF
+	    SRH->( DBSKIP() )
+    Enddo
+
+RestArea(aArea)
+
+Return(aGozoFer)

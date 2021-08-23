@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<list key="installedFeatures">
+		<item value="org.eclipse.emf.common:2.10.1.v20150123-0348"/>
+		<item value="org.eclipse.emf.ecore:2.10.2.v20150123-0348"/>
+		<item value="org.eclipse.help:2.0.103.v20150204-1700"/>
+		<item value="org.eclipse.platform:4.4.2.v20150204-1700"/>
+		<item value="org.eclipse.rcp:4.4.2.v20150204-1700"/>
+		<item value="org.eclipse.team.svn:1.1.4.I20140624-1700"/>
+		<item value="org.polarion.eclipse.team.svn.connector.svnkit18:3.0.6.I20140624-1700"/>
+		<item value="org.polarion.eclipse.team.svn.connector:3.0.6.I20140624-1700"/>
+	</list>
+</section>

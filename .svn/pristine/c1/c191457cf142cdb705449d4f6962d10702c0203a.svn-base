@@ -1,0 +1,51 @@
+-- Cadastro de Armazém
+
+NNR_XACA - Câmara Fria - 1=Sim;2=Não                                                                                                                     
+
+NNR_XADE - Depósito - 1=Sim;2=Não 
+
+NNR_XAES - Estoque - 1=Sim;2=Não 
+
+NNR_XAFR - Freezer - 1=Sim;2=Não 
+
+NNR_XALV - LJ Vitrine   - 1=Sim;2=Não 
+
+Cadastro de Produto
+
+B1_XLISTA - Lista Invent - S=Sim;N=Não                                                                                                                     
+
+-- Criar pasta inventário e colocar o campos
+
+B5_XUNCF - Unid Camara Fria - SAH
+
+B5_XFACF - F. Camara Fria - N 8,3 @E 9,999.999                                 
+
+B5_XUNDE - Unid Deposito - SAH
+
+B5_XFADE - F. Deposto - SAH - N 8,3 @E 9,999.999 
+
+B5_XUNES - Unid Estoque - SAH
+
+B5_XFAES - F. Estoque - N 8,3 @E 9,999.999 
+
+B5_XUNFR - Unid Freezer - SAH
+
+B5_XFAFR - F. Freezer - N 8,3 @E 9,999.999 
+
+B5_XUNLV - Unid LJ Vitrine - SAH
+
+B5_XFALV - F. LJ Vitrine - SAH - N 8,3 @E 9,999.999 
+
+B5_XGPR1 - Grupo 1 - Z3
+
+B5_XGPR2 - Grp Produto  - 1=Cafe & Doces;2=Embalagens;3=Gelato;4=Insumos
+
+B5_XDESINV - Desc Inventario - 
+
+-- Bloqueio de Produtos x Armazém
+
+ZZ2_FILIAL - Filial
+
+ZZ2_COD - Codigo do Produto
+
+ZZ2_LOCAL - Local Aramzem

@@ -1,0 +1,36 @@
+#INCLUDE "PROTHEUS.CH"
+#INCLUDE "RWMAKE.CH"
+
+//ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//±±ÉÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+//±±ºPrograma  ³MA410MNU  |Autor  ³Vanito Rocha        | Data ³  18/12/20   º±±
+//±±ÌÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+//±±ºDesc.     ³Ponto de entrada utilizado para adicionar opções ao Menu    º±±
+//±±º          ³                                                            º±±
+//±±ÈÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+User Function MA410MNU()
+
+aAdd(aRotina,{"Enviar Refrio"   ,"U_BLENVRE",0,2,0,NIL})
+aAdd(aRotina,{"Consulta Refrio"   ,"U_BLCONRE",0,2,0,NIL})
+
+Return
+
+User Function BLENVRE()
+
+Local cNumPe:=SC5->C5_NUM
+
+    Processa( {|| U_XMLREFR(cNumPe) }, "Refrio x Bacio", "Carregando definição do pedido: " + cNumPe,.F.)
+
+Return()                                                                           
+
+
+User Function BLCONRE()
+
+Local cNumPe:=SC5->C5_NUM
+
+    Processa( {|| U_BLCONSPE(cNumPe) }, "Refrio x Bacio", "Carregando definição do pedido: " + cNumPe,.F.)
+
+Return()                                                                           

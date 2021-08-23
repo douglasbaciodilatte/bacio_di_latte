@@ -1,0 +1,318 @@
+#Include "TOTVS.ch"
+#Include "FWMVCDEF.ch"
+#include "topconn.ch"
+#include "tbiconn.ch"
+#INCLUDE 'RWMAKE.CH'
+
+#DEFINE OP_EFE	"011" // Efetivar
+#DEFINE OP_ALT	"004" // Alterar
+
+/*/{Protheus.doc} BDTRANSF
+    @type User Function
+    @author Felipe Mayer - RVacari
+    @since 27/07/2020
+    @Desc Funcao responsavel por criar tela Solicit Transf new
+/*/
+User Function BDTRANSF()
+
+Local oBrowse := FwLoadBrw("BDTRANSF")
+    
+    oBrowse:Activate()
+Return (NIL)
+
+
+/*/{Protheus.doc} BrowseDef
+    @type Static Function
+    @author Felipe Mayer - RVacari
+    @since 27/07/2020
+    @Desc Criacao do Browser
+/*/
+Static Function BrowseDef()
+
+Local oBrowse := FwMBrowse():New()
+
+    oBrowse:SetAlias("NNS")
+    oBrowse:SetDescription("Solicitação de Transferência")
+
+   oBrowse:AddLegend( "NNS_STATUS == '1'", "GREEN"		, 'Liberado' 	 )//"Liberado"
+    oBrowse:AddLegend( "NNS_STATUS == '2'", "RED"		, 'Transferido'  )//"Transferido"
+    oBrowse:AddLegend( "NNS_STATUS == '3'", "BLUE"		, 'Em Aprovação' )//"Em Aprovação"
+    oBrowse:AddLegend( "NNS_STATUS == '4'", "YELLOW"	, 'Rejeitado' 	 )//"Rejeitado"
+
+    oBrowse:SetMenuDef("BDTRANSF")
+
+Return (oBrowse)
+
+
+/*/{Protheus.doc} MenuDef
+    @type Static Function
+    @author Felipe Mayer - RVacari
+    @since 27/07/2020
+    @Desc Criacao do menu
+/*/
+Static Function MenuDef()
+
+Local aRotina := {}
+
+    ADD OPTION aRotina TITLE 'Incluir'      ACTION 'VIEWDEF.BDTRANSF'   OPERATION MODEL_OPERATION_INSERT    ACCESS 0
+    ADD OPTION aRotina TITLE 'Alterar'      ACTION 'A311Altera'         OPERATION OP_ALTERAR                ACCESS 0 ID OP_ALT
+    ADD OPTION aRotina TITLE 'Visualizar'   ACTION 'VIEWDEF.BDTRANSF'   OPERATION MODEL_OPERATION_VIEW      ACCESS 0
+    ADD OPTION aRotina TITLE 'Legenda'      ACTION 'U_LEGBDLTR'         OPERATION 6                         ACCESS 0
+    ADD OPTION aRotina TITLE 'Excluir' 	 	ACTION 'VIEWDEF.BDTRANSF'   OPERATION MODEL_OPERATION_DELETE    ACCESS 3
+
+Return (aRotina)
+
+
+/*/{Protheus.doc} ModelDef
+    @type Static Function
+    @author Felipe Mayer - RVacari
+    @since 27/07/2020
+    @Desc Criacao do modelo de dados 
+/*/
+
+Static Function ModelDef()
+
+Local oModel
+Local oStrNNS	:= FWFormStruct(1,'NNS')
+Local oStrNNT	:= FWFormStruct(1,'NNT')
+Local aNoCopy	:= {'NNS_STATUS', 'NNS_SOLICT', 'NNS_DATA'}
+Local aNoCopyNNT:= {'NNT_DOC', 'NNT_SERIE'}
+
+Local aUnique := oStrNNT:GetTable()[FORM_STRUCT_TABLE_ALIAS_PK]
+Local nCodPos := AScan(aUnique, 'NNT_COD')
+
+    oModel := MPFormModel():New("311MODEL1" ,,{|oModel|A311VLD(oModel) } )
+
+    oModel:AddFields( 'NNSMASTER',,oStrNNS)
+    oModel:AddGrid( 'NNTDETAIL', 'NNSMASTER', oStrNNT, {|| fLinOK()} /*bPreValidacao*/, /*{|oModelNNT|A311LinOk(oModelNNT)}bPosValidacao*/, /*bCarga*/ )
+
+    oModel:SetRelation('NNTDETAIL', { { 'NNT_FILIAL', 'xFilial("NNT")' }, { 'NNT_COD', 'NNS_COD' } }, NNT->(IndexKey(1)) )
+
+    oModel:GetModel('NNSMASTER'):SetDescription('Cabeçalho')//'Cabeçalho da Solicitação de Transferência de Produtos'
+    oModel:GetModel('NNTDETAIL'):SetDescription('Itens')//'Itens Solicitação de Transferência de Produtos'
+
+    aGatilho := FwStruTrigger ( 'NNT_PROD' /*cDom*/, 'NNT_PROD' /*cCDom*/, "A311FillGrd()" /*cRegra*/, .F. /*lSeek*/, /*cAlias*/,  /*nOrdem*/, /*cChave*/, /*cCondic*/ )
+    oStrNNT:AddTrigger( aGatilho[1] /*cIdField*/, aGatilho[2] /*cTargetIdField*/, aGatilho[3] /*bPre*/, aGatilho[4] /*bSetValue*/ )
+
+    oModel:SetPrimaryKey({ 'NNS_FILIAL', 'NNS_COD' })
+
+    // A coluna NNT_COD só é preenchida no momento em que os dados do formulário são commitados.
+    // Por isso, em caso de Alteração, os dados inseridos anteriormente vêem com esse campo preenchido, e novas linhas não, podendo comprometer a chave única. 
+    If nCodPos > 0
+        ADel(aUnique, nCodPos)
+        ASize(aUnique, Len(aUnique) - 1)
+    EndIf
+
+    oModel:GetModel('NNTDETAIL'):SetUniqueLine(aUnique)
+
+    // Configura campos que não serão considerados ao copiar registro.
+    oModel:GetModel('NNSMASTER'):SetFldNoCopy(aNoCopy)
+    oModel:GetModel('NNTDETAIL'):SetFldNoCopy(aNoCopyNNT)
+
+    oModel:SetActivate({|oModel| A311ActMod( oModel, 2 )})
+
+Return oModel
+
+/*/{Protheus.doc} fLinOK
+    @type Static Function
+    @author Felipe Mayer - RVacari
+    @since 29/09/2020
+    @Desc Pre-Validacao de linhas do Grid
+/*/
+Static Function fLinOK()
+
+Local oModel  := FwModelActive()
+    oModel:SetValue('NNSMASTER','NNS_STATUS','1') //Gatilho Grid -> Cabec - Status rejeita
+Return .T.
+
+
+/*/{Protheus.doc} ModelDef
+    @type Static Function
+    @author Felipe Mayer - RVacari
+    @since 27/07/2020
+    @Desc Criacao da view do modelo de dados
+/*/
+Static Function ViewDef()
+
+Local oView
+Local oModel	:= ModelDef()
+Local oStrNNS	:= FWFormStruct(2, 'NNS', {|cCampo| !AllTrim(cCampo) $ "NNS_STATUS"})
+Local oStrNNT	:= FWFormStruct(2, 'NNT', {|cCampo| !AllTrim(cCampo) $ "NNT_COD"})
+
+    oView := FWFormView():New()
+
+    oView:SetModel(oModel)
+
+    oView:AddField('NNSMASTER' , oStrNNS,'NNSMASTER' )
+    oView:AddGrid('NNTDETAIL'  , oStrNNT,'NNTDETAIL')
+
+    oView:CreateHorizontalBox( 'BOXCIMA', 40)
+    oView:CreateHorizontalBox( 'BOXBAIXO',60)
+
+    oView:SetOwnerView('NNSMASTER','BOXCIMA')
+    oView:SetOwnerView('NNTDETAIL','BOXBAIXO')
+
+    oView:EnableTitleView('NNSMASTER' , 'Cabeçalho' )//"Documento de Transferência"
+    oView:EnableTitleView('NNTDETAIL' , 'Itens' )//"Dados para Transferência"
+
+    oView:AddUserButton('Replicar TES', 'CLIPS', {||  A311RepTES()})//'Replicar TES'
+
+    oStrNNS:RemoveField("NNS_JUSTIF")
+    oStrNNS:RemoveField("NNS_XNSTAT")
+    oStrNNT:RemoveField("NNT_LOCALI")
+    oStrNNT:RemoveField("NNT_NSERIE")
+    oStrNNT:RemoveField("NNT_LOTECT")
+    oStrNNT:RemoveField("NNT_NUMLOT")
+    oStrNNT:RemoveField("NNT_DTVALI")
+    oStrNNT:RemoveField("NNT_POTENC")
+    oStrNNT:RemoveField("NNT_LOCDES")
+    oStrNNT:RemoveField("NNT_LOTED ")
+    oStrNNT:RemoveField("NNT_DTVALD")
+    oStrNNT:RemoveField("NNT_XHORA ")
+    oStrNNT:RemoveField("NNT_XDATA ")
+    oStrNNT:RemoveField("NNT_USERGI")
+    oStrNNT:RemoveField("NNT_USERGA")
+    oStrNNT:RemoveField("NNT_XOBSCO")
+    oStrNNT:RemoveField("NNT_XCUSTD")
+    oStrNNT:RemoveField("NNT_XMOTIV")
+    oStrNNT:RemoveField("NNT_XDTEXC")
+
+Return oView
+
+
+
+/*/{Protheus.doc} LEGBDLTR
+    @type Static Function
+    @author Felipe Mayer - RVacari
+    @since 14/08/2020
+    @Desc Tela de legenda
+/*/
+User Function LEGBDLTR()
+    
+Local aLegAux := {}
+     
+    AADD(aLegAux,{"BR_VERDE"    ,  "Liberado"    })
+    AADD(aLegAux,{"BR_VERMELHO" ,  "Transferido" })
+    AADD(aLegAux,{"BR_AZUL"     ,  "Em Aprovação"})
+    AADD(aLegAux,{"BR_AMARELO"  ,  "Rejeitado"   })
+
+    BrwLegenda("Tela Conferência - Legendas", "Legendas", aLegAux)
+Return
+
+/*/{Protheus.doc} STATNNS1
+    @type User Function
+    @author Felipe Mayer - RVacari
+    @since 29/09/2020
+    @Desc Criar nome do status
+/*/
+User Function STATNNS1()
+
+Local cRet := ''
+
+    If Alltrim(NNS->NNS_STATUS) == '1'
+        cRet := 'Liberado'
+    ElseIf Alltrim(NNS->NNS_STATUS) == '2'
+        cRet := 'Transferido'
+    ElseIf Alltrim(NNS->NNS_STATUS) == '3'
+        cRet := 'Em Aprovação'
+    ElseIf Alltrim(NNS->NNS_STATUS) == '4'
+        cRet := 'Rejeitado'
+    EndIf
+
+Return (cRet)
+
+//-------------------------------------------------------------------
+/*/{Protheus.doc} A311ActMod()
+Valida ativação do modelo
+
+@author desconhecido
+@since desconhecido
+@version P12.0
+/*/
+//-------------------------------------------------------------------
+
+Static Function A311VLD(oModel)
+
+Local oModelNNT := oModel:GetModel('NNTDETAIL')
+Local lRet		:= .T.
+Local nX		:= 0
+Local aFilDes	:= {}
+
+For nX := 1 To oModelNNT:Length()
+	
+    oModelNNT:GoLine( nX )
+	
+    If !oModelNNT:IsDeleted()
+	
+    	If cFilAnt # oModelNNT:GetValue( 'NNT_FILDES' )
+			
+            Aadd(aFilDes,oModelNNT:GetValue( 'NNT_FILDES' ))
+			//Verifica se os campos NNT_TS e NNT_TE foram preenchidos
+			
+            If Empty(oModelNNT:GetValue( 'NNT_TS' ))
+				Alert("O campo NNT_TS não foi preenchido. Preencha o campo com o código da TES de saida.")
+				lRet := .F.
+			Endif
+			
+            If lRet
+				If Empty(oModelNNT:GetValue( 'NNT_TE' ))
+					Alert("O campo NNT_TE não foi preenchido. Preencha o campo com o código da TES de entrada.")
+					lRet := .F.
+				Endif
+			Endif
+
+            //validação Douglas Silva 15/01/2021 - Verifica quantidade 0 Primeira ou Seunda
+            If lRet
+				If (oModelNNT:GetValue( 'NNT_QUANT' )) == 0 .Or. (oModelNNT:GetValue( 'NNT_QTSEG' )) == 0 
+					Alert("O campo NNT_QUANT ou NNT_QTSEG não foi preenchido. Preencha a quantidade solicitada.")
+					lRet := .F.
+				Endif
+			Endif
+
+            //Validação Douglas Silva 15/01/2021 - Verifica saldo de cotas
+            If lRet
+                cChave := 	oModelNNT:GetValue( 'NNT_FILDES' ) +;  //Filial Destino
+                            oModelNNT:GetValue( 'NNT_PROD' ) +;    //Codigo Produto destino	
+                            oModelNNT:GetValue( 'NNT_LOCLD' )      // Armazem Destino  			
+
+                //Verifica tabela de cotas
+                ZCC->(dbSelectArea("ZCC"))
+                ZCC->(dbSetOrder(1))
+                If ZCC->(dbSeek( cChave ))
+                
+                    //Verifica saldo em Cota
+                    nQtde1 := oModelNNT:GetValue( 'NNT_QUANT' )
+                    nQtde2 := oModelNNT:GetValue( 'NNT_QTSEG' )
+                    
+                    If ZCC->ZCC_QTDE1 > 0 
+                    
+                        If nQtde1 > ZCC->ZCC_QTDE1 	       			
+                            Alert("ATENÇÃO: Quantidade solicitada maior que o saldo em cotas, Saldo: " + cValToChar(ZCC->ZCC_QTDE1) + " Solicite revisão ao Consultor") 
+                            lRet := .F.
+                        EndIf	
+                    
+                    ElseIf ZCC->ZCC_QTDE2 > 0	
+                        
+                        If nQtde2 > ZCC->ZCC_QTDE2  		       			
+                            Alert("ATENÇÃO: Quantidade solicitada maior que o saldo em cotas, Saldo: " + cValToChar(ZCC->ZCC_QTDE2) + " Solicite revisão ao Consultor")
+                            lRet := .F.	       			
+                        EndIf
+                                                
+                    ElseIf ZCC->ZCC_QTDE1 == 0 .And. ZCC->ZCC_QTDE2 == 0	
+                        
+                            Alert("ATENÇÃO: Não é possível solicitar o item pois não existe saldo de cotas, Saldo = 0 Solicite revisão ao Consultor")
+                            lRet := .F.	       			
+                
+                    EndIf
+                                        
+                EndIf
+
+            EndIf    
+
+		EndIf            
+		
+	EndIf
+		             
+Next nX
+
+Return lRet

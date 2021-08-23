@@ -1,0 +1,371 @@
+//Bibliotecas
+#Include "Protheus.ch"
+#Include "TopConn.ch"
+#include 'parmtype.ch'
+ 
+ Static cTMVAL   := GetMV("BL_TMVAL",.T.,"510;520;530;540;550")  
+
+/*
+bdlEsta2 
+Rotina para digitação do descarte em lote
+
+*/
+ 
+User Function BDLESTA2()
+    Local aArea := GetArea()
+    //Objetos da Janela
+    Private oDlgPvt
+    Private oMsGetSBM
+    Private aHeadSBM := {}
+    Private aColsSBM := {}
+    Private oBtnSalv
+    Private oBtnFech
+    Private oBtnLege
+    //Tamanho da Janela
+    Private    nJanLarg    := 0
+    Private    nJanAltu    := 0
+    //Fontes
+    Private    cFontUti   := "Tahoma"
+    Private    oFontAno   := TFont():New(cFontUti,,-38)
+    Private    oFontSub   := TFont():New(cFontUti,,-20)
+    Private    oFontSubN  := TFont():New(cFontUti,,-20,,.T.)
+    Private    oFontBtn   := TFont():New(cFontUti,,-14)
+    Private    cComboBox :=  "510=Avaria-Qualidade Fornecedor;520=Avaria-Qualidade Interna;530=Descarte Producao;540=Produto Descontinuado;550=Produto Vencido"
+
+    //if upper(left(cusername,2)) != 'LJ'
+	//    msgStop("Esta rotina esta somente disponível para as lojas","DENIED")
+	//    return
+    //endif 
+
+	aAdd(aHeadSBM, {"Produto"           , "XX_COD"    ,""                 ,TamSX3("D3_COD" )[01], 0,"NaoVazio() .and. U_VlSE3Cpo('COD')", "û", "C", "SB1", "" } )
+    aAdd(aHeadSBM, {"Descrição"         , "XX_DESC"   ,""                 ,TamSX3("B1_DESC")[01], 0,".T."                               , "û", "C", "   ", "" } )
+    aAdd(aHeadSBM, {"Motivo do Descarte", "XX_TM"     , ""                ,3                    , 0,"NaoVazio()"                        , "û", "C", ""   , "", @cComboBox} )
+    aAdd(aHeadSBM, {"Unid.Medida1"      , "XX_UM"     , ""                ,2                    , 0,""                                  , "û", "C", ""   , "" } )
+    aAdd(aHeadSBM, {"Quant.UM 1"        , "XX_QUANT"  ,"@E 999,999,999.99",018                  , 2,"U_VlSE3Cpo('QTD1')"                , "û", "N", ""   , "" } )
+    aAdd(aHeadSBM, {"Unid.Medida2"      , "XX_UM2"    , ""                ,2                    , 0,""                                  , "û", "C", ""   , "" } )
+    aAdd(aHeadSBM, {"Quant.UM 2"        , "XX_QUANT2" ,"@E 999,999,999.99",018                  , 2,"U_VlSE3Cpo('QTD2')"                , "û", "N", ""   , "" } )
+    aAdd(aHeadSBM, {"Data"              , "XX_EMISSAO",""                 ,  8                  , 0,".T."                               , "û", "D", ""   , "" } )
+    
+    aAlter := {"XX_COD","XX_TM","XX_QUANT","XX_QUANT2","XX_EMISSAO"}    
+	
+    aAdd(aColsSBM, { ;
+            SPACE(TamSX3("D3_COD")[01] ),;//SPACE(TamSX3("B1_LOCPAD")[01]),;
+            SPACE(TamSX3("B1_DESC")[01]),;
+            SPACE(3),;
+            SPACE(2),;
+            0,;
+            SPACE(2),;
+            0,;
+            DATE(),;
+            .F.;
+        })
+    nJanLarg := 1325
+    nJanAltu := 575
+    //Criação da tela com os dados que serão informados
+    DEFINE MSDIALOG oDlgPvt TITLE "Descarte de Produto" FROM 000, 000  TO nJanAltu, nJanLarg COLORS 0, 16777215 PIXEL
+        //oDlgPvt:lMaximized := .T.
+        //Labels gerais
+        @ 004, 003 SAY "Descarte"   SIZE 200, 030 FONT oFontAno  OF oDlgPvt COLORS RGB(149,179,215) PIXEL
+        //@ 004, 090 SAY "Produtos"   SIZE 200, 030 FONT oFontSub  OF oDlgPvt COLORS RGB(031,073,125) PIXEL
+       // @ 014, 090 SAY "Descartados" SIZE 200, 030 FONT oFontSubN OF oDlgPvt COLORS RGB(031,073,125) PIXEL
+         
+        //Botões
+        @ 006, (nJanLarg/2-001)-(0052*01) BUTTON oBtnFech  PROMPT "Fechar"        SIZE 050, 018 OF oDlgPvt ACTION (oDlgPvt:End())                               FONT oFontBtn PIXEL
+        //@ 006, (nJanLarg/2-001)-(0052*02) BUTTON oBtnLege  PROMPT "Legenda"       SIZE 050, 018 OF oDlgPvt ACTION (fLegenda())                                  FONT oFontBtn PIXEL
+        @ 006, (nJanLarg/2-001)-(0052*02) BUTTON oBtnSalv  PROMPT "Salvar"        SIZE 050, 018 OF oDlgPvt ACTION (fSalvar())                                   FONT oFontBtn PIXEL
+         
+        //Grid dos grupos B1_XLISTA
+        oMsGetSBM := MsNewGetDados():New(   029,;                //nTop      - Linha Inicial
+                                            003,;                //nLeft     - Coluna Inicial
+                                            (nJanAltu/2)-3,;     //nBottom   - Linha Final
+                                            (nJanLarg/2)-3,;     //nRight    - Coluna Final
+                                            GD_INSERT + GD_UPDATE + GD_DELETE,;//nStyle    - Estilos para edição da Grid (GD_INSERT = Inclusão de Linha; GD_UPDATE = Alteração de Linhas; GD_DELETE = Exclusão de Linhas)
+                                            "U_VLSE3()",;       //cLinhaOk  - Validação da linha
+                                            "U_VLTSE3()",;       //cTudoOk   - Validação de todas as linhas
+                                            "",;                 //cIniCpos  - Função para inicialização de campos
+                                            aAlter,;             //aAlter    - Colunas que podem ser alteradas
+                                            ,;                   //nFreeze   - Número da coluna que será congelada
+                                            9999,;               //nMax      - Máximo de Linhas
+                                            "U_VLSE3FdOK",;      //cFieldOK  - Validação da coluna
+                                            ,;                   //cSuperDel - Validação ao apertar '+'
+                                            ,;                   //cDelOk    - Validação na exclusão da linha
+                                            @oDlgPvt,;            //oWnd      - Janela que é a dona da grid
+                                            @aHeadSBM,;           //aHeader   - Cabeçalho da Grid
+                                            @aColsSBM,;            //aCols     - Dados da Grid
+                                            {|| FullField()} )
+        //oMsGetSBM:lMaximized := .T.   
+    ACTIVATE MSDIALOG oDlgPvt CENTERED
+     
+    RestArea(aArea)
+Return
+
+ 
+/*--------------------------------------------------------*
+ | Func.: fSalvar                                         |
+ | Desc.: Função que percorre as linhas e faz a gravação  |
+ *--------------------------------------------------------*/
+ 
+Static Function fSalvar()
+    Local aColsAux    := oMsGetSBM:aCols
+    Local nPosCod     := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_COD"    })
+    //Local nPosLoc     := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_LOCAL"})
+    Local nPosTM      := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_TM"     })
+    Local nPosQuant   := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_QUANT"  })
+    Local nPosEmissao := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_EMISSAO"})
+    Local nPosQuan2   := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_QUANT2" })
+   
+    Local nPosDel     := Len(aHeadSBM) + 1
+    Local nLinha   := 0
+    Local _aDados := {}
+    //Local _nPos := aScan(_aItens, {|x| x == _cCombo})
+    Private lMsErroAuto := .F.
+    
+    if U_VLTSE3() == .F.
+        Return
+    EndiF
+    //Percorrendo todas as linhas
+    For nLinha := 1 To Len(aColsAux)
+        _aDados := {}
+        
+        lMsErroAuto := .F.
+
+        if !(aColsAux[nLinha,nPosDel] )
+            DbSelectArea("NNR")
+            DBSETORDER(1)
+            if !DbSeek(xFilial("NNR")+RIGHT(CUSERNAME,4)+ '01')
+                Reclock("NNR",.T.)
+                NNR->NNR_FILIAL := XFILIAL("NNR")
+                NNR->NNR_CODIGO := RIGHT(CUSERNAME,4)+ '01'
+                NNR->NNR_DESCRI := "DESCARTE " + RIGHT(CUSERNAME,4) +'01'
+                Msunlock()
+            endif
+
+            aAdd(_aDados, {"D3_FILIAL" , xFilial("SD3"), NIL})
+            aAdd(_aDados, {"D3_TM"     , aColsAux[nLinha,nPosTM] , NIL})
+            aAdd(_aDados, {"D3_COD"    , aColsAux[nLinha,nPosCod], NIL})
+            aAdd(_aDados, {"D3_QUANT"  , aColsAux[nLinha,nPosQuant], NIL})
+            aAdd(_aDados, {"D3_LOCAL"  , RIGHT(CUSERNAME,4)+ '01', NIL})
+            //aAdd(_aDados, {"D3_LOCAL"  , aColsAux[nLinha,nPosLoc], NIL})
+            aAdd(_aDados, {"D3_EMISSAO", aColsAux[nLinha,nPosEmissao], NIL})
+            aAdd(_aDados, {"D3_QTSEGUM", aColsAux[nLinha,nPosQuan2], NIL})
+
+
+            MSEXECAUTO({|x,y|mata240(x,y)}, _aDados, 3)
+
+            if lMsErroAuto
+                MostraErro()
+            else
+                //msgInfo("Descarte registrado com sucesso!!!", "INCLUSAO OK")
+            endif
+        endif
+    Next nLinha
+    MsgInfo("Manipulações finalizadas!", "Atenção")
+    oDlgPvt:End()
+Return
+/* 
+Valida Linha do Grid
+ */
+user function VLSE3()
+    Local aColsAux    := oMsGetSBM:aCols
+    Local nPosCod     := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_COD"})
+    Local nPosTM      := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_TM"})
+    Local nPosQuant   := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_QUANT"})
+    Local nPosEmissao := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_EMISSAO"})
+
+    Local nLinha      := oMsGetSBM:nat
+    Local lRet        := .T.
+
+    if empty(aColsAux[nLinha,nPosCod])
+        lRet := .F.
+        Alert("Campo de Produto vazio")
+    Elseif empty(aColsAux[nLinha,nPosTM])
+        lRet := .F.
+        Alert("Campo de Tipo de Movimento vazio")
+    Elseif !(aColsAux[nLinha,nPosTM] $ cTMVAL)
+        lRet := .F.
+        Alert("Tipo de Movimento inválido para esta Opreação")
+    Elseif aColsAux[nLinha,nPosQuant] <= 0
+        lRet := .F.
+        Alert("Quantidade Invalida")
+    Elseif aColsAux[nLinha,nPosEmissao ] > date() .or. empty(aColsAux[nLinha,nPosEmissao])
+        lRet := .F.
+        Alert("Data invalida Invalida")
+    elseif !(ExistCpo("SB1", aColsAux[nLinha,nPosCod]))
+        lRet := .F.
+        Alert("Produto não encontrado")
+   Else
+        lRet := .T.
+    Endif
+
+
+return lRet
+/* 
+Valida Todas as linhas do grid
+ */
+user function VLTSE3()
+    Local aColsAux    := oMsGetSBM:aCols
+    Local nPosCod     := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_COD"    })
+    Local nPosTM      := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_TM"     })
+    Local nPosQuant   := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_QUANT"  })
+    Local nPosEmissao := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_EMISSAO"})
+
+    Local nLinha      := 1
+    Local lRet        := .T.
+   
+    FOR nLinha := 1 to len(aColsAux)
+        if empty(aColsAux[nLinha,nPosCod])
+            lRet := .F.
+            Alert("Campo de Produto vazio")
+            exit
+        Elseif empty(aColsAux[nLinha,nPosTM])
+            lRet := .F.
+            Alert("Campo de Tipo de Movimento vazio")
+            exit
+        Elseif !(aColsAux[nLinha,nPosTM] $ cTMVAL )
+            lRet := .F.
+            Alert("Tipo de Movimento inválido para esta Opreação")
+            exit
+        Elseif aColsAux[nLinha,nPosQuant] <= 0
+            lRet := .F.
+            Alert("Quantidade Invalida")
+            exit
+        Elseif aColsAux[nLinha,nPosEmissao ] > date() .or. empty(aColsAux[nLinha,nPosEmissao])
+            lRet := .F.
+            Alert("Data invalida Invalida")
+            exit
+         elseif !(ExistCpo("SB1", aColsAux[nLinha,nPosCod]))
+             lRet := .F.
+             Alert("Produto não encontrado")
+             Exit
+        Else
+             lRet := .T.
+        Endif
+    Next nLinha
+
+
+return lRet
+
+User Function VLSE3FdOK()
+    Local aColsAux    := oMsGetSBM:aCols
+    Local nPosCod     := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_COD"    })
+    Local nPosDesc    := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_DESC"   })
+    //Local nPosTM      := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_TM"     })
+    //Local nPosQuant   := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_QUANT"  })
+    //Local nPosQuan2   := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_QUANT2" })
+    //Local nPosEmissao := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_EMISSAO"})
+   // Local nPosValUn   := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_VALUNI" })
+    //Local nPosTotal   := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_TOTAL"  })
+    Local nPosUM1     := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_UM"     })
+    Local nPosUM2     := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_UM2"    })
+    //Local nConv := 1
+    //Local cTipoCon:= "D"
+    
+    
+    //oMsGetSBM:oBrowse:Refresh()
+    nX := oMsGetSBM:nAt
+    
+    //IF  Empty(oMsGetSBM:aCols[nX ,nPosDesc]) 
+        oMsGetSBM:aCols[nX,nPosDesc] := posicione("SB1",1,XfILIAL("SB1")+oMsGetSBM:aCols[nX,nPosCod],"B1_DESC" )
+        oMsGetSBM:aCols[nX,nPosUM1]  := posicione("SB1",1,XfILIAL("SB1")+oMsGetSBM:aCols[nX,nPosCod],"B1_UM"   )
+        oMsGetSBM:aCols[nX,nPosUM2]  := posicione("SB1",1,XfILIAL("SB1")+oMsGetSBM:aCols[nX,nPosCod],"B1_SEGUM")
+        aColsAux[nX,nPosDesc]        := posicione("SB1",1,XfILIAL("SB1")+oMsGetSBM:aCols[nX,nPosCod],"B1_DESC" )
+        aColsAux[nX,nPosUM1]         := posicione("SB1",1,XfILIAL("SB1")+oMsGetSBM:aCols[nX,nPosCod],"B1_UM"   )
+        aColsAux[nX,nPosUM2]         := posicione("SB1",1,XfILIAL("SB1")+oMsGetSBM:aCols[nX,nPosCod],"B1_SEGUM")
+    //endif    
+     
+    //IF  oMsGetSBM:aCols[nX ,nPosQuant] <> 0 .AND. oMsGetSBM:aCols[nX ,nPosValUn] <> 0
+    //    oMsGetSBM:aCols[nX,nPosTotal] := oMsGetSBM:aCols[nX,nPosQuant] * oMsGetSBM:aCols[nX,nPosValUn]
+        ///M->XX_TOTAL  := oMsGetSBM:aCols[nX,nPosQuant] * oMsGetSBM:aCols[nX,nPosValUn]
+    //ENDIF
+
+    oMsGetSBM:SetArray(aColsAux,.F.)
+    
+    ///oMsGetSBM:Refresh()
+    oMsGetSBM:oBrowse:Refresh()
+    oMsGetSBM:Refresh()
+
+    lRet := .T.
+Return lRet
+
+
+USER Function VlSE3Cpo(cTipo)
+    Local lRet := .T.
+    
+    Local nPosCod     := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_COD"    })
+    Local nPosDesc    := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_DESC"   })
+    //Local nPosTM      := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_TM"     })
+    Local nPosQuant   := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_QUANT"  })
+    Local nPosQuan2   := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_QUANT2" })
+    //Local nPosEmissao := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_EMISSAO"})
+    //Local nPosValUn   := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_VALUNI" })
+    //Local nPosTotal   := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_TOTAL"  })
+    Local nPosUM1     := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_UM"     })
+    Local nPosUM2     := aScan(aHeadSBM, {|x| Alltrim(x[2]) == "XX_UM2"    })
+    Local nConv   := 1
+    Local cTipoCon:= "D"
+   
+    Default cTipo := ""
+    
+    nX := oMsGetSBM:nAt
+    
+    //if cTipo == "COD"
+        IF M->XX_COD <> NIL    
+            oMsGetSBM:aCols[nX,nPosCod] := M->XX_COD
+        ELSE
+            M->XX_COD := oMsGetSBM:aCols[nX,nPosCod] 
+        ENDIF
+        oMsGetSBM:aCols[nX,nPosDesc] := posicione("SB1",1,XfILIAL("SB1")+oMsGetSBM:aCols[nX,nPosCod],"B1_DESC" )
+        oMsGetSBM:aCols[nX,nPosUM1]  := posicione("SB1",1,XfILIAL("SB1")+oMsGetSBM:aCols[nX,nPosCod],"B1_UM"   )
+        oMsGetSBM:aCols[nX,nPosUM2]  := posicione("SB1",1,XfILIAL("SB1")+oMsGetSBM:aCols[nX,nPosCod],"B1_SEGUM")
+       // if M->XX_COD <> oMsGetSBM:aCols[nX,nPosCod]
+           // M->XX_COD  := oMsGetSBM:aCols[nX,nPosCod]
+            M->XX_DESC := oMsGetSBM:aCols[nX,nPosDesc]
+            M->XX_UM   := oMsGetSBM:aCols[nX,nPosUM1] 
+            M->XX_UM2  := oMsGetSBM:aCols[nX,nPosUM2]
+            if Empty(M->XX_DESC)
+                lRet := .F.
+                Alert("Produto não encontrado")
+            endif
+        //endif
+    //Endif
+
+    if (cTipo == "QTD1" .AND. !EMPTY(oMsGetSBM:aCols[nX,nPosCod])) //.OR. M->XX_QUANT <> oMsGetSBM:aCols[nX,nPosQuant]
+
+        cTipoCon := posicione("SB1",1,XfILIAL("SB1")+oMsGetSBM:aCols[nX,nPosCod],"B1_TIPCONV")
+        nConv    := posicione("SB1",1,XfILIAL("SB1")+oMsGetSBM:aCols[nX,nPosCod],"B1_CONV"   )
+    
+        if cTipoCon == "D"
+            oMsGetSBM:aCols[nX,nPosQuan2] := M->XX_QUANT / nConv
+        elseif cTipoCon == "M"
+            oMsGetSBM:aCols[nX,nPosQuan2] := M->XX_QUANT * nConv
+        endif
+        M->XX_QUANT2 :=  oMsGetSBM:aCols[nX,nPosQuan2]
+
+    elseif cTipo == "QTD2" .AND. !EMPTY(oMsGetSBM:aCols[nX,nPosCod]) // .OR. M->XX_QUANT2 == NIL
+
+        cTipoCon := posicione("SB1",1,XfILIAL("SB1")+oMsGetSBM:aCols[nX,nPosCod],"B1_TIPCONV")
+        nConv    := posicione("SB1",1,XfILIAL("SB1")+oMsGetSBM:aCols[nX,nPosCod],"B1_CONV"   )
+    
+        if cTipoCon == "D"
+            oMsGetSBM:aCols[nX,nPosQuant] := M->XX_QUANT2 * nConv
+        elseif cTipoCon == "M"
+            oMsGetSBM:aCols[nX,nPosQuant] := M->XX_QUANT2 / nConv
+        endif
+        M->XX_QUANT  :=  oMsGetSBM:aCols[nX,nPosQuant]
+    ENDIF 
+    //aColsAux := oMsGetSBM:aCols
+       
+    //oMsGetSBM:SetArray(aColsAux,.F.)
+    
+    oMsGetSBM:oBrowse:Refresh()
+    oMsGetSBM:Refresh()
+  
+    //lRet := .T.
+return lRet
+
+
+Static Function FullField()
+
+    oMsGetSBM:Refresh()
+    
+return 

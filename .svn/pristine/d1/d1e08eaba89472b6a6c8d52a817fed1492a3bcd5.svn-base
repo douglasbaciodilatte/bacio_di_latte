@@ -1,0 +1,128 @@
+#include "rwmake.ch"        
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+ฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑ
+ฑฑษออออออออออัออออออออออหอออออออัออออออออออออออออออออหออออออัอออออออออออออปฑฑ
+ฑฑบPrograma  ณBACCP010  บAutor  ณJeremias Lameze Jr. บ Data ณ  06/02/17   บฑฑ
+ฑฑฬออออออออออุออออออออออสอออออออฯออออออออออออออออออออสออออออฯอออออออออออออนฑฑ
+ฑฑบDesc.     ณ Rotina para filtrar serie de notas do SX5                  บฑฑ
+ฑฑบ          ณ                                                            บฑฑ
+ฑฑฬออออออออออุออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออนฑฑ
+ฑฑบUso       ณ BACIO  - chamada CHGX5FIL                                  บฑฑ
+ฑฑศออออออออออฯออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผฑฑ
+ฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑฑ
+฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿฿
+*/
+User Function CHGX5FIL()
+
+Local Ret := SPACE(04)
+
+IF cFilAnt == '0001'  
+   Ret := '0001'
+ElseIf cFilAnt == '0002'
+   Ret := '0002'
+ElseIf cFilAnt == '0003'  
+   Ret := '0003'
+ElseIf cFilAnt == '0004'
+   Ret := '0004'
+ElseIf cFilAnt == '0005'  
+   Ret := '0005'
+ElseIf cFilAnt == '0006'
+   Ret := '0006'
+ElseIf cFilAnt == '0007'  
+   Ret := '0007'
+ElseIf cFilAnt == '0008'
+   Ret := '0008'   
+ElseIf cFilAnt == '0009'  
+   Ret := '0009'
+ElseIf cFilAnt == '0010'
+   Ret := '0010'
+ElseIf cFilAnt == '0011'  
+   Ret := '0011'
+ElseIf cFilAnt == '0012'
+   Ret := '0012'
+ElseIf cFilAnt == '0013'  
+   Ret := '0013'
+ElseIf cFilAnt == '0014'
+   Ret := '0014'
+ElseIf cFilAnt == '0015'  
+   Ret := '0015'
+ElseIf cFilAnt == '0016'
+   Ret := '0016'
+ElseIf cFilAnt == '0017'  
+   Ret := '0017'
+ElseIf cFilAnt == '0018'
+   Ret := '0018'
+ElseIf cFilAnt == '0019'  
+   Ret := '0019'
+ElseIf cFilAnt == '0020'
+   Ret := '0020'
+ElseIf cFilAnt == '0021'  
+   Ret := '0021'
+ElseIf cFilAnt == '0022'
+   Ret := '0022'
+ElseIf cFilAnt == '0023'  
+   Ret := '0023'
+ElseIf cFilAnt == '0024'
+   Ret := '0024'
+ElseIf cFilAnt == '0025'  
+   Ret := '0025'
+ElseIf cFilAnt == '0026'
+   Ret := '0026'
+ElseIf cFilAnt == '0027'  
+   Ret := '0027'
+ElseIf cFilAnt == '0028'
+   Ret := '0028'
+ElseIf cFilAnt == '0029'  
+   Ret := '0029'
+ElseIf cFilAnt == '0030'
+   Ret := '0030'
+ElseIf cFilAnt == '0031'  
+   Ret := '0031'
+ElseIf cFilAnt == '0032'
+   Ret := '0032'
+ElseIf cFilAnt == '0033'  
+   Ret := '0033'
+ElseIf cFilAnt == '0035'
+   Ret := '0035'   
+ElseIf cFilAnt == '0036'  
+   Ret := '0036'
+ElseIf cFilAnt == '0037'
+   Ret := '0037'
+ElseIf cFilAnt == '0038'  
+   Ret := '0038'
+ElseIf cFilAnt == '0039'
+   Ret := '0039'
+ElseIf cFilAnt == '0040'  
+   Ret := '0040'
+ElseIf cFilAnt == '0041'
+   Ret := '0041'
+ElseIf cFilAnt == '0042'  
+   Ret := '0042'
+ElseIf cFilAnt == '0043'
+   Ret := '0043'
+ElseIf cFilAnt == '0044'  
+   Ret := '0044'
+ElseIf cFilAnt == '0045'
+   Ret := '0045'
+ElseIf cFilAnt == '0046'  
+   Ret := '0046'
+ElseIf cFilAnt == '0047'
+   Ret := '0047'
+ElseIf cFilAnt == '0048'  
+   Ret := '0048'
+ElseIf cFilAnt == '0049'
+   Ret := '0049'
+ElseIf cFilAnt == '0050'  
+   Ret := '0050'
+ElseIf cFilAnt == '0051'
+   Ret := '0051'
+ElseIf cFilAnt == '0052'  
+   Ret := '0052'
+ElseIf cFilAnt == '0034'
+   Ret := '0034'
+
+EndIf
+
+Return(Ret)
