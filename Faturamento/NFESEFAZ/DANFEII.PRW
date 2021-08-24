@@ -157,6 +157,27 @@ Else
 	FreeObj(oDANFE)
 	oDANFE := Nil
 
+//Tratamento para Transferencia do Título e Impressão do Boleto
+//Posiciona NF-e
+
+If lExistNFe
+	SF2->(dbSelectArea("SF2"))
+	SF2->(DBSEEK(XfILIAL("SF2")+MV_PAR01+MV_PAR03,.T.))
+	while SF2->F2_DOC <= MV_PAR02 .And. SF2->F2_SERIE == MV_PAR03 .And. xFilial("SF2") == SF2->F2_FILIAL
+
+		DbSelectArea("SA1")
+		DbSetOrder(1)                                                                                                                                    
+		DbSeek(xFilial("SA1")+SF2->F2_CLIENTE+SF2->F2_LOJA)
+				
+		If SA1->A1_XIMPBOL=="1"
+			MsgAlert("O Cliente possui boleto para ser impresso, por favor anexe os mesmos juntamente com a DANFE","Boleto")
+			U_BLBOL001(SF2->F2_CLIENTE, SF2->F2_LOJA, SF2->F2_DOC)
+		Endif
+		
+		SF2->(dbSkip())	
+	EndDo
+EndIf
+
 /*
 
 Trecho para Exportar o XML da NF-e e emviar para o FTP da NeoGrid
